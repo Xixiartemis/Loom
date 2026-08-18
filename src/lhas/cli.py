@@ -19,6 +19,7 @@ from lhas.persistence.database import Database
 from lhas.persistence.event_store import EventStore
 from lhas.persistence.repositories import AttemptRepository, ProjectRepository, RunRepository, TaskRepository
 from lhas.stage0 import print_stage0, run_stage0
+from lhas.stageb import print_stageb, run_stageb
 from lhas.task_service import create_task
 
 app = typer.Typer(help="LHAS — Long-Horizon Agent System runtime / harness CLI.")
@@ -156,6 +157,22 @@ def stage0() -> None:
         project = project_repo.create(Project(name="RUNTIME-V0.1", type="benchmark"))
     results, exp_id = run_stage0(db, project_id=project.id, experiment_id="EXP-20260818-RUNTIME-001")
     exit_code = print_stage0(results, db, exp_id)
+    db.close()
+    if exit_code != 0:
+        raise typer.Exit(code=1)
+
+
+@app.command("stageb")
+def stageb() -> None:
+    """Run the Phase B validation/recovery suite and write the experiment record."""
+    setup_logging(log_dir())
+    db = _open_db()
+    project_repo = ProjectRepository(db)
+    project = project_repo.get_by_name("RUNTIME-V0.1")
+    if project is None:
+        project = project_repo.create(Project(name="RUNTIME-V0.1", type="benchmark"))
+    results, exp_id = run_stageb(db, project_id=project.id, experiment_id="EXP-20260818-RUNTIME-002")
+    exit_code = print_stageb(results, exp_id)
     db.close()
     if exit_code != 0:
         raise typer.Exit(code=1)

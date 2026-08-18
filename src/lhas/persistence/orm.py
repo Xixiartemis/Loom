@@ -93,3 +93,69 @@ class EventRow(Base):
     event_type: Mapped[str] = mapped_column(String(48), nullable=False)
     payload: Mapped[str | None] = _json_col()
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ContextSnapshotRow(Base):
+    """Per-attempt context snapshot (docs/05 — every attempt saves a full
+    snapshot for replay / A-B / token analysis / failure analysis)."""
+
+    __tablename__ = "context_snapshots"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    run_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    attempt_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    policy: Mapped[str] = mapped_column(String(16), nullable=False)
+    sections: Mapped[str | None] = _json_col()
+    raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ValidationResultRow(Base):
+    """Validation outcome per attempt (docs/06)."""
+
+    __tablename__ = "validation_results"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    attempt_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    passed: Mapped[bool] = mapped_column(Integer, nullable=False)  # SQLite bool
+    level: Mapped[str] = mapped_column(String(32), nullable=False)
+    checks: Mapped[str | None] = _json_col()
+    evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stdout: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stderr: Mapped[str | None] = mapped_column(Text, nullable=True)
+    duration_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class FailureReportRow(Base):
+    """Failure classification per failed attempt (docs/07)."""
+
+    __tablename__ = "failure_reports"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    attempt_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    failure_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    failure_class: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    suggested_recovery: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class RecoveryActionRow(Base):
+    """Recovery decision per failed attempt (docs/08 — full log required)."""
+
+    __tablename__ = "recovery_actions"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    attempt_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(48), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    context_policy: Mapped[str] = mapped_column(String(16), nullable=False)
+    attempt_from: Mapped[int] = mapped_column(Integer, nullable=False)
+    attempt_to: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    added_context: Mapped[str | None] = _json_col()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

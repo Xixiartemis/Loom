@@ -2,7 +2,7 @@
 
 - **Task ID:** LHAS-PHASE-A-CORE-01
 - **Phase:** A — Core Runtime
-- **Status:** In progress
+- **Status:** Done (2026-08-18, Stage 0 PASS, EXP-20260818-RUNTIME-001)
 - **Created:** 2026-08-18
 
 ## 前置阅读

@@ -3,8 +3,9 @@
 __version__ = "0.1.0"
 
 # Harness version: bump whenever Recovery / Context / Validation / Orchestration
-# policy changes (docs/12_EXPERIMENT_PROTOCOL.md).
-HARNESS_VERSION = "HV-0.1"
+# policy changes (docs/12_EXPERIMENT_PROTOCOL.md). Phase B added the
+# validation + failure-aware recovery pipeline -> HV-0.2.
+HARNESS_VERSION = "HV-0.2"
 
 # Default dataset / context-policy labels used by experiment records.
 DEFAULT_DATASET_VERSION = "RUNTIME-V0.1"
