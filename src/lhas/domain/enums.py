@@ -1,0 +1,163 @@
+"""Domain state enums (docs/02_DOMAIN_MODEL.md)."""
+
+from enum import Enum
+
+
+class TaskStatus(str, Enum):
+    """Lifecycle of a Task. Phase A uses CREATED/RUNNING/COMPLETED/ESCALATED;
+    VALIDATING/RECOVERING/BLOCKED are reserved for Phase B+."""
+
+    CREATED = "CREATED"
+    READY = "READY"
+    RUNNING = "RUNNING"
+    VALIDATING = "VALIDATING"
+    RECOVERING = "RECOVERING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    BLOCKED = "BLOCKED"
+    ESCALATED = "ESCALATED"
+    CANCELLED = "CANCELLED"
+
+
+class RunStatus(str, Enum):
+    """Lifecycle of a Run (mirrors Task lifecycle at run granularity)."""
+
+    CREATED = "CREATED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    ESCALATED = "ESCALATED"
+    CANCELLED = "CANCELLED"
+
+
+class AttemptStatus(str, Enum):
+    """Lifecycle of a single Attempt inside a Run."""
+
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    TIMED_OUT = "TIMED_OUT"
+    CRASHED = "CRASHED"
+
+
+class ExecutionStatus(str, Enum):
+    """Terminal verdict of one executor invocation (docs/04_EXECUTOR_PROTOCOL.md)."""
+
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    TIMEOUT = "TIMEOUT"
+    CRASH = "CRASH"
+
+
+class EventType(str, Enum):
+    """Event catalog.
+
+    Phase A emits the subset defined by docs/10_LOGGING_SPEC.md plus the
+    attempt/run lifecycle events required by the Phase A state machine
+    (ATTEMPT_*/RUN_*/RETRY_SCHEDULED — an explicit, documented extension).
+    Validation/recovery/human-approval events are emitted from Phase B on.
+    """
+
+    # Task lifecycle
+    TASK_CREATED = "TASK_CREATED"
+    TASK_STARTED = "TASK_STARTED"
+    TASK_COMPLETED = "TASK_COMPLETED"
+    TASK_FAILED = "TASK_FAILED"
+    TASK_ESCALATED = "TASK_ESCALATED"
+    TASK_CANCELLED = "TASK_CANCELLED"
+
+    # Run lifecycle
+    RUN_CREATED = "RUN_CREATED"
+    RUN_STARTED = "RUN_STARTED"
+    RUN_COMPLETED = "RUN_COMPLETED"
+    RUN_FAILED = "RUN_FAILED"
+    RUN_ESCALATED = "RUN_ESCALATED"
+
+    # Attempt lifecycle
+    ATTEMPT_STARTED = "ATTEMPT_STARTED"
+    ATTEMPT_COMPLETED = "ATTEMPT_COMPLETED"
+    ATTEMPT_FAILED = "ATTEMPT_FAILED"
+    ATTEMPT_TIMED_OUT = "ATTEMPT_TIMED_OUT"
+    ATTEMPT_CRASHED = "ATTEMPT_CRASHED"
+
+    # Context
+    CONTEXT_BUILT = "CONTEXT_BUILT"
+
+    # Executor
+    EXECUTOR_STARTED = "EXECUTOR_STARTED"
+    EXECUTOR_EVENT = "EXECUTOR_EVENT"
+    EXECUTOR_COMPLETED = "EXECUTOR_COMPLETED"
+    EXECUTOR_FAILED = "EXECUTOR_FAILED"
+
+    # Recovery (Phase A: deterministic decision; Phase B: classifier-driven)
+    RETRY_SCHEDULED = "RETRY_SCHEDULED"
+
+    # Validation / recovery pipeline (Phase B)
+    VALIDATION_STARTED = "VALIDATION_STARTED"
+    VALIDATION_PASSED = "VALIDATION_PASSED"
+    VALIDATION_FAILED = "VALIDATION_FAILED"
+    FAILURE_CLASSIFIED = "FAILURE_CLASSIFIED"
+    RECOVERY_DECIDED = "RECOVERY_DECIDED"
+    RECOVERY_STARTED = "RECOVERY_STARTED"
+
+    # Human approval gate (Phase F)
+    HUMAN_APPROVAL_REQUIRED = "HUMAN_APPROVAL_REQUIRED"
+    HUMAN_APPROVAL_GRANTED = "HUMAN_APPROVAL_GRANTED"
+    ACTION_SUBMITTED = "ACTION_SUBMITTED"
+
+
+class FailureClass(str, Enum):
+    """Failure taxonomy families (docs/07_FAILURE_TAXONOMY.md)."""
+
+    EXECUTION = "EXECUTION"
+    DATA = "DATA"
+    REASONING = "REASONING"
+    CONTEXT = "CONTEXT"
+    ACTION = "ACTION"
+    UNKNOWN = "UNKNOWN"
+
+
+class FailureType(str, Enum):
+    """Failure taxonomy types (docs/07_FAILURE_TAXONOMY.md)."""
+
+    # EXECUTION
+    TIMEOUT = "TIMEOUT"
+    EXECUTOR_CRASH = "EXECUTOR_CRASH"
+    TOOL_ERROR = "TOOL_ERROR"
+    NETWORK_ERROR = "NETWORK_ERROR"
+    # DATA
+    EMPTY_RESULT = "EMPTY_RESULT"
+    INVALID_JD = "INVALID_JD"
+    DUPLICATE_JOB = "DUPLICATE_JOB"
+    EXPIRED_JOB = "EXPIRED_JOB"
+    MISSING_REQUIRED_FIELD = "MISSING_REQUIRED_FIELD"
+    # REASONING
+    WRONG_MATCH = "WRONG_MATCH"
+    WRONG_ASSUMPTION = "WRONG_ASSUMPTION"
+    BAD_RANKING = "BAD_RANKING"
+    INCOMPLETE_ANALYSIS = "INCOMPLETE_ANALYSIS"
+    # CONTEXT
+    MISSING_CONTEXT = "MISSING_CONTEXT"
+    STALE_CONTEXT = "STALE_CONTEXT"
+    CONTEXT_CONFLICT = "CONTEXT_CONFLICT"
+    CONTEXT_OVERLOAD = "CONTEXT_OVERLOAD"
+    # ACTION
+    LOGIN_REQUIRED = "LOGIN_REQUIRED"
+    FORM_CHANGED = "FORM_CHANGED"
+    FIELD_VALIDATION_ERROR = "FIELD_VALIDATION_ERROR"
+    UPLOAD_FAILED = "UPLOAD_FAILED"
+    DUPLICATE_APPLICATION = "DUPLICATE_APPLICATION"
+    APPROVAL_REQUIRED = "APPROVAL_REQUIRED"
+    # FALLBACK
+    UNKNOWN = "UNKNOWN"
+
+
+class RecoveryActionType(str, Enum):
+    """Recovery actions (docs/08_RECOVERY_POLICY.md V0 default policy)."""
+
+    RETRY_WITH_FAILURE_CONTEXT = "RETRY_WITH_FAILURE_CONTEXT"
+    RETRY_WITH_EXPANDED_CONTEXT = "RETRY_WITH_EXPANDED_CONTEXT"
+    ESCALATE = "ESCALATE"
+    ABORT = "ABORT"
+    HUMAN_APPROVAL = "HUMAN_APPROVAL"
