@@ -3,6 +3,7 @@
   "version": "v0.1",
   "description": "Job Application Benchmark V0.1 — 离线 30 JD 匹配数据集(Phase C 固定,不可变)",
   "created_at": "2026-08-18",
+  "as_of_date": "2026-08-18",
   "ground_truth_status": "DRAFT — 待人工确认(labels_v1.json 内逐条 status 字段)",
   "composition": {
     "total_jobs": 30,

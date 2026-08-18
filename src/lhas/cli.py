@@ -178,6 +178,69 @@ def stageb() -> None:
         raise typer.Exit(code=1)
 
 
+@app.command("jobbench")
+def jobbench(
+    dataset: str = typer.Option("benchmarks/job-v0.1", help="Dataset directory"),
+    predictor: str = typer.Option("rule", help="rule (deterministic) | llm (requires LHAS_JOB_LLM_API_KEY)"),
+    experiment_id: Optional[str] = typer.Option(None, help="Explicit EXP id (default auto)"),
+    as_of: Optional[str] = typer.Option(None, help="Reference date YYYY-MM-DD for expiration"),
+    no_record: bool = typer.Option(False, "--no-record", help="Do not write an experiment record"),
+) -> None:
+    """Run the Job Benchmark on a locked dataset and write an EXP-JOB record."""
+    from datetime import date
+
+    from lhas.job.bench import run_job_bench
+    from lhas.job.models import labels_status, load_job_dataset
+    from lhas.job.recorder import JobExperimentRecorder
+
+    ds = load_job_dataset(dataset)
+    print(f"dataset : {ds.manifest.get('dataset_id')} ({len(ds.jobs)} jobs)")
+    status = labels_status(ds)
+    print(f"labels  : {status}")
+    if status.get("DRAFT", 0):
+        print("warning : ground truth is DRAFT — metrics are provisional until human review")
+
+    as_of_date = date.fromisoformat(as_of) if as_of else None
+    result = run_job_bench(ds, predictor=predictor, as_of=as_of_date)
+
+    m = result.metrics
+    print("-" * 56)
+    print(f"predictor: {result.predictor}   model: {result.model or '-'}")
+    print(f"hard_constraint_accuracy    {m.hard_constraint_accuracy:.3f}")
+    print(f"fit_classification_accuracy {m.fit_classification_accuracy:.3f}")
+    print(f"precision@5                 {m.precision_at_5:.3f}")
+    print(f"recall@10                   {m.recall_at_10:.3f}")
+    print(f"ranking_quality (ndcg@10)   {m.ranking_quality_ndcg10:.3f}")
+    print(f"evidence_accuracy           {m.evidence_accuracy:.3f}")
+    print(f"hallucination_rate          {m.hallucination_rate:.3f}")
+    print(f"duplicate_detection_rate    {m.duplicate_detection_rate:.3f}")
+    print(f"expired_job_detection_rate  {m.expired_job_detection_rate:.3f}")
+    print("-" * 56)
+    for e in result.evaluations:
+        marks = ("H" if e.hard_correct else "h") + ("F" if e.fit_correct else "f") + ("A" if e.apply_correct else "a")
+        print(f"  {e.job_id}  {marks}  hit={e.evidence_hit:.2f} cov={e.evidence_coverage:.2f}{'  HALLUC' if e.hallucination else ''}")
+
+    if no_record:
+        return
+    recorder = JobExperimentRecorder()
+    exp_id = experiment_id or recorder.next_id("JOB")
+    recorder.record(
+        experiment_id=exp_id,
+        dataset_id=ds.manifest.get("dataset_id", "unknown"),
+        ground_truth_status=str(status),
+        predictor=result.predictor,
+        model=result.model,
+        provider="mock" if result.predictor == "rule" else "llm",
+        harness_version=HARNESS_VERSION,
+        context_policy_version="CP-1",
+        recovery="OFF",
+        metrics=m,
+        predictions=[p.model_dump() for p in result.predictions],
+        evaluations=[e.model_dump() for e in result.evaluations],
+    )
+    print(f"experiment record: experiments/{exp_id}/")
+
+
 @app.command()
 def version() -> None:
     """Print version info."""
