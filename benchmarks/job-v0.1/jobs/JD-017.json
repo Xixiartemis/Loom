@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-017",
+  "company": "深圳市云端部署科技有限公司",
+  "title": "AI 应用开发工程师(需部署经验)",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-017",
+  "posted_date": "2026-05-19",
+  "expires_at": "2026-09-19",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "开发 AI 应用并要求具备基本的部署与运维能力。",
+  "requirements": [
+    "LLM 应用",
+    "Docker/K8s 部署",
+    "CI/CD",
+    "Python/React"
+  ],
+  "responsibilities": [
+    "AI 应用开发",
+    "服务容器化部署",
+    "CI/CD 流水线维护"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-020",
+  "company": "深圳市敏捷智能有限公司",
+  "title": "AI 应用工程师",
+  "location": "深圳(可远程)",
+  "remote": true,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-020",
+  "posted_date": "2026-05-24",
+  "expires_at": "2026-09-24",
+  "job_type": "AI 应用",
+  "degree_required": "本科(硕士优先)",
+  "graduate_year_required": "2026",
+  "experience_required": "1 年以上应用开发经验(实习可折算)",
+  "jd_text": "开发 AI 应用产品,支持远程办公;硕士学历优先但不作为硬性要求。",
+  "requirements": [
+    "LLM 应用",
+    "React/Python",
+    "加分:硕士学历",
+    "加分:开源项目"
+  ],
+  "responsibilities": [
+    "AI 应用功能开发",
+    "跨团队协作",
+    "线上文档与异步沟通"
+  ]
+}

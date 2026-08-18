@@ -1,0 +1,20 @@
+{
+  "version": "career_goal_v1",
+  "candidate_id": "CAND-001",
+  "target_roles": [
+    "AI应用工程",
+    "Agent应用开发",
+    "AI全栈",
+    "AI Coding",
+    "AI前端"
+  ],
+  "preferred_direction": "AI Application / Agent Systems",
+  "avoid_primary_direction": [
+    "pure model training",
+    "pure algorithm research"
+  ],
+  "location_preference": ["深圳", "广州", "远程"],
+  "job_nature": ["校招"],
+  "salary_expectation": "面议",
+  "notes": "希望做 AI 应用落地产品,不做纯模型训练/纯算法研究岗位。"
+}

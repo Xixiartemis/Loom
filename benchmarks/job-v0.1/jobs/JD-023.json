@@ -1,0 +1,25 @@
+{
+  "job_id": "JD-023",
+  "company": "北京市中关村智能科技有限公司",
+  "title": "大模型应用工程师",
+  "location": "北京",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-023",
+  "posted_date": "2026-05-13",
+  "expires_at": "2026-09-13",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "工作地点北京,负责大模型应用开发,要求到岗办公。",
+  "requirements": [
+    "LLM API",
+    "Python",
+    "北京到岗(不提供远程)"
+  ],
+  "responsibilities": [
+    "大模型应用开发",
+    "业务系统 AI 化改造"
+  ]
+}

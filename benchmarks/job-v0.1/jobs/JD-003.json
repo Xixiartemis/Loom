@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-003",
+  "company": "广州市幻影网络科技有限公司",
+  "title": "Agent 应用开发工程师",
+  "location": "广州",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-003",
+  "posted_date": "2026-04-10",
+  "expires_at": "2026-08-31",
+  "job_type": "AI Agent",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "开发多轮对话与任务型 Agent,服务于营销与客服场景。",
+  "requirements": [
+    "Python",
+    "Agent 编排(Coze/Dify 或 LangChain 均可)",
+    "RAG 基础",
+    "多轮对话系统理解"
+  ],
+  "responsibilities": [
+    "Agent 流程搭建",
+    "知识库问答链路开发",
+    "对话效果调优"
+  ]
+}

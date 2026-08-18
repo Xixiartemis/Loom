@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-018",
+  "company": "深圳市三维视觉科技有限公司",
+  "title": "AI 前端工程师(WebGL/3D 方向)",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-018",
+  "posted_date": "2026-05-21",
+  "expires_at": "2026-09-21",
+  "job_type": "AI 前端",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责 AI 3D 内容工具的前端开发,基于 WebGL 呈现生成式 3D 内容。",
+  "requirements": [
+    "React",
+    "WebGL/Three.js",
+    "3D 渲染",
+    "TypeScript"
+  ],
+  "responsibilities": [
+    "3D 场景前端开发",
+    "渲染性能优化",
+    "AI 生成内容展示"
+  ]
+}

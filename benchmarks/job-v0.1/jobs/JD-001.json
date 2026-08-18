@@ -1,0 +1,28 @@
+{
+  "job_id": "JD-001",
+  "company": "深圳市星穹智能科技有限公司",
+  "title": "AI Agent 应用开发工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-001",
+  "posted_date": "2026-05-20",
+  "expires_at": "2026-09-30",
+  "job_type": "AI Agent",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届/实习",
+  "jd_text": "负责面向企业的 AI Agent 应用开发,基于 LLM API 构建智能助手与自动化流程。",
+  "requirements": [
+    "React/TypeScript 前端开发",
+    "Python 后端开发",
+    "LLM API 集成",
+    "Agent 应用开发经验(项目或实习)",
+    "良好的沟通与文档能力"
+  ],
+  "responsibilities": [
+    "智能助手对话界面开发",
+    "Agent 工作流编排与调试",
+    "LLM 调用链路优化"
+  ]
+}

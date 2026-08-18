@@ -1,0 +1,51 @@
+{
+  "dataset_id": "JOB-V0.1",
+  "version": "v0.1",
+  "description": "Job Application Benchmark V0.1 — 离线 30 JD 匹配数据集(Phase C 固定,不可变)",
+  "created_at": "2026-08-18",
+  "ground_truth_status": "DRAFT — 待人工确认(labels_v1.json 内逐条 status 字段)",
+  "composition": {
+    "total_jobs": 30,
+    "expected_fit_high": 10,
+    "expected_fit_medium": 10,
+    "expected_fit_low": 10
+  },
+  "job_type_mix": [
+    "AI Agent", "AI 应用", "AI 全栈", "AI Coding", "AI 前端",
+    "纯前端", "普通后端", "Agent 算法", "AI Infra", "测试开发"
+  ],
+  "deliberate_traps": [
+    "毕业年份错误", "学历不满足", "地点不合适", "明显技能不匹配", "岗位过期", "重复岗位"
+  ],
+  "versions": {
+    "resume_version": "resume_v1",
+    "candidate_profile_version": "candidate_profile_v1",
+    "career_goal_version": "career_goal_v1",
+    "jd_dataset_version": "jd_v1",
+    "ground_truth_version": "labels_v1",
+    "dataset_version": "JOB-V0.1"
+  },
+  "layout": {
+    "candidate": "candidate/",
+    "jobs": "jobs/JD-001.json .. JD-030.json",
+    "ground_truth": "ground_truth/labels_v1.json"
+  },
+  "spec_ref": "docs/11_BENCHMARK_TASKS.md",
+  "rules": {
+    "hard_constraints": [
+      "degree_required 与候选人学历",
+      "graduate_year_required 与候选人毕业年份",
+      "location 与 career_goal.location_preference(remote=true 时豁免)",
+      "核心技能与候选人技能交集",
+      "experience_required 与候选人经验"
+    ],
+    "trap_placements": {
+      "graduation_year": ["JD-021", "JD-028"],
+      "degree": ["JD-022", "JD-026"],
+      "location": ["JD-023", "JD-024"],
+      "skills": ["JD-025", "JD-027"],
+      "expired": ["JD-029"],
+      "duplicate": ["JD-029", "JD-030"]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-004",
+  "company": "深圳市光年互动科技有限公司",
+  "title": "AI 前端工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-004",
+  "posted_date": "2026-05-01",
+  "expires_at": "2026-09-01",
+  "job_type": "AI 前端",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责 AI 产品前端交互开发,打造大模型对话与生成式界面。",
+  "requirements": [
+    "React/TypeScript",
+    "前端工程化(Vite/Webpack)",
+    "LLM 交互界面经验",
+    "组件化开发"
+  ],
+  "responsibilities": [
+    "对话式 UI 组件开发",
+    "流式输出渲染优化",
+    "前端工程化建设"
+  ]
+}

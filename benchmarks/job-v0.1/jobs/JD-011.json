@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-011",
+  "company": "深圳市矩阵基础设施有限公司",
+  "title": "AI Infra 工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-011",
+  "posted_date": "2026-05-12",
+  "expires_at": "2026-09-12",
+  "job_type": "AI Infra",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责 AI 服务的基础设施与推理部署,保障模型服务稳定高效。",
+  "requirements": [
+    "Docker/K8s",
+    "GPU 推理部署",
+    "Python",
+    "云服务(AWS/阿里云)"
+  ],
+  "responsibilities": [
+    "模型服务容器化部署",
+    "推理服务监控与告警",
+    "云资源成本优化"
+  ]
+}

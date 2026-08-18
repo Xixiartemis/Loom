@@ -1,0 +1,26 @@
+{
+  "job_id": "JD-022",
+  "company": "深圳市高端人才有限公司",
+  "title": "AI 全栈工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "内推平台",
+  "url": "https://careers.example.com/jobs/jd-022",
+  "posted_date": "2026-05-09",
+  "expires_at": "2026-09-09",
+  "job_type": "AI 全栈",
+  "degree_required": "硕士",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "招聘硕士学历 AI 全栈工程师,负责企业级 AI 平台建设。",
+  "requirements": [
+    "React/TypeScript",
+    "Python/FastAPI",
+    "LLM API",
+    "硕士学历(硬性要求)"
+  ],
+  "responsibilities": [
+    "AI 平台全栈开发",
+    "AI 能力中台建设"
+  ]
+}

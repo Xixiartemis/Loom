@@ -1,0 +1,28 @@
+{
+  "job_id": "JD-009",
+  "company": "深圳市灵犀智能有限公司",
+  "title": "LLM Agent 开发工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-009",
+  "posted_date": "2026-05-22",
+  "expires_at": "2026-09-22",
+  "job_type": "AI Agent",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "开发客服与助理类 Agent 产品,负责智能体流程与工具调用设计。",
+  "requirements": [
+    "Python",
+    "Agent 框架(Coze/Dify 等)",
+    "LLM API",
+    "Prompt 工程",
+    "客服/助手类产品经验"
+  ],
+  "responsibilities": [
+    "Agent 工具调用设计",
+    "Prompt 模板维护",
+    "客服机器人对话质量优化"
+  ]
+}

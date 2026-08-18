@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-010",
+  "company": "深圳市未来视界科技有限公司",
+  "title": "AI 应用开发工程师(智能体方向)",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-010",
+  "posted_date": "2026-06-01",
+  "expires_at": "2026-10-01",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "开发智能体类 AI 应用,探索 Agent 在内容生成与办公场景的落地。",
+  "requirements": [
+    "智能体应用",
+    "React",
+    "LLM API",
+    "Python"
+  ],
+  "responsibilities": [
+    "智能体应用开发",
+    "前端交互界面",
+    "LLM 功能联调"
+  ]
+}

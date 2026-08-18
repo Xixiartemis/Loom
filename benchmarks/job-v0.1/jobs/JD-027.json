@@ -1,0 +1,26 @@
+{
+  "job_id": "JD-027",
+  "company": "上海市前沿算法研究院",
+  "title": "AI 算法研究员",
+  "location": "上海",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-027",
+  "posted_date": "2026-04-30",
+  "expires_at": "2026-08-30",
+  "job_type": "Agent 算法",
+  "degree_required": "硕士",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "从事 AI 算法研究,鼓励发表顶会论文;要求硕士及以上学历。",
+  "requirements": [
+    "算法研究",
+    "论文发表",
+    "扎实数学功底",
+    "硕士及以上学历(硬性要求)"
+  ],
+  "responsibilities": [
+    "前沿算法研究",
+    "论文撰写与发表"
+  ]
+}

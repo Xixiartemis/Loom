@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-002",
+  "company": "深圳市启明数字科技有限公司",
+  "title": "AI 应用全栈工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-002",
+  "posted_date": "2026-05-15",
+  "expires_at": "2026-09-15",
+  "job_type": "AI 全栈",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责 AI 应用产品前后端全栈开发,将大模型能力集成进业务系统。",
+  "requirements": [
+    "React/TypeScript",
+    "Python/FastAPI",
+    "LLM API 调用",
+    "全栈项目经验"
+  ],
+  "responsibilities": [
+    "AI 功能前后端联调",
+    "产品功能迭代",
+    "LLM 调用封装"
+  ]
+}

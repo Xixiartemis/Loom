@@ -1,0 +1,25 @@
+{
+  "job_id": "JD-024",
+  "company": "上海市浦江智能科技有限公司",
+  "title": "AI 前端工程师",
+  "location": "上海",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-024",
+  "posted_date": "2026-05-17",
+  "expires_at": "2026-09-17",
+  "job_type": "AI 前端",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "工作地点上海,负责 AI 产品前端开发,要求到岗办公。",
+  "requirements": [
+    "React/TypeScript",
+    "LLM 交互界面",
+    "上海到岗(不提供远程)"
+  ],
+  "responsibilities": [
+    "AI 前端开发",
+    "对话界面构建"
+  ]
+}

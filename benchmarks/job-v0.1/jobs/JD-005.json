@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-005",
+  "company": "深圳市代码星河科技有限公司",
+  "title": "AI Coding 应用工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "内推平台",
+  "url": "https://careers.example.com/jobs/jd-005",
+  "posted_date": "2026-05-25",
+  "expires_at": "2026-09-25",
+  "job_type": "AI Coding",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "基于 LLM 构建代码生成与代码分析工具,提升研发效率。",
+  "requirements": [
+    "LLM API(OpenAI/DeepSeek)",
+    "Python",
+    "代码生成/代码分析工具理解",
+    "React 基础"
+  ],
+  "responsibilities": [
+    "代码补全与审查工具开发",
+    "LLM 提示词与后处理链路",
+    "开发者工具前端界面"
+  ]
+}

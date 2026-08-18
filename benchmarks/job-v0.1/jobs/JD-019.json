@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-019",
+  "company": "深圳市向量引擎科技有限公司",
+  "title": "大模型应用开发(需向量数据库深度)",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-019",
+  "posted_date": "2026-05-23",
+  "expires_at": "2026-09-23",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责大规模知识库检索与 RAG 应用开发,要求对检索链路有深入理解。",
+  "requirements": [
+    "RAG 深度",
+    "Milvus/向量数据库",
+    "检索优化",
+    "Python"
+  ],
+  "responsibilities": [
+    "向量检索链路开发",
+    "召回效果调优",
+    "知识库系统建设"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-008",
+  "company": "广州市数智新星科技有限公司",
+  "title": "AI 全栈开发工程师",
+  "location": "广州",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-008",
+  "posted_date": "2026-05-18",
+  "expires_at": "2026-09-18",
+  "job_type": "AI 全栈",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "开发 AI 驱动的企业应用,覆盖前端交互与后端服务。",
+  "requirements": [
+    "React/Node.js",
+    "Python",
+    "LLM API",
+    "全栈项目经验"
+  ],
+  "responsibilities": [
+    "企业 AI 应用全栈开发",
+    "前后端联调",
+    "AI 功能集成"
+  ]
+}

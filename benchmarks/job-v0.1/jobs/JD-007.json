@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-007",
+  "company": "深圳市知行智能科技有限公司",
+  "title": "AI 应用研发工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-007",
+  "posted_date": "2026-04-20",
+  "expires_at": "2026-08-20",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责 AI 应用后端服务研发,支撑大模型能力在业务中稳定落地。",
+  "requirements": [
+    "Python/FastAPI",
+    "LLM API",
+    "MySQL",
+    "后端服务开发"
+  ],
+  "responsibilities": [
+    "AI 服务接口开发",
+    "数据存储与查询优化",
+    "LLM 调用限流与降级"
+  ]
+}

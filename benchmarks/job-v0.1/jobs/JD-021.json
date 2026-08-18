@@ -1,0 +1,25 @@
+{
+  "job_id": "JD-021",
+  "company": "深圳市往届招聘有限公司",
+  "title": "AI 应用工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-021",
+  "posted_date": "2026-05-11",
+  "expires_at": "2026-08-11",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2025",
+  "experience_required": "仅限 2025 届",
+  "jd_text": "仅面向 2025 届毕业生招聘 AI 应用工程师,2026 届请勿投递。",
+  "requirements": [
+    "LLM API",
+    "Python",
+    "仅限 2025 届毕业生"
+  ],
+  "responsibilities": [
+    "AI 应用开发",
+    "LLM 功能集成"
+  ]
+}

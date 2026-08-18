@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-006",
+  "company": "深圳市云端智能有限公司",
+  "title": "大模型应用开发工程师",
+  "location": "远程",
+  "remote": true,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-006",
+  "posted_date": "2026-05-10",
+  "expires_at": "2026-09-10",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "远程协作开发大模型应用,面向文档问答与知识管理场景。",
+  "requirements": [
+    "LLM API",
+    "RAG",
+    "Python",
+    "远程协作能力"
+  ],
+  "responsibilities": [
+    "RAG 应用开发",
+    "文档知识库问答",
+    "线上协作与异步沟通"
+  ]
+}

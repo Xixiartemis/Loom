@@ -1,0 +1,25 @@
+{
+  "job_id": "JD-028",
+  "company": "广州市旧届招聘有限公司",
+  "title": "2025 届 AI 前端工程师",
+  "location": "广州",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-028",
+  "posted_date": "2026-05-06",
+  "expires_at": "2026-08-06",
+  "job_type": "AI 前端",
+  "degree_required": "本科",
+  "graduate_year_required": "2025",
+  "experience_required": "仅限 2025 届",
+  "jd_text": "仅面向 2025 届毕业生招聘 AI 前端工程师。",
+  "requirements": [
+    "React/TypeScript",
+    "LLM 交互界面",
+    "仅限 2025 届毕业生"
+  ],
+  "responsibilities": [
+    "AI 前端开发",
+    "对话界面构建"
+  ]
+}

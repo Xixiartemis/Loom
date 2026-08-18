@@ -1,0 +1,26 @@
+{
+  "job_id": "JD-025",
+  "company": "深圳市硬件星辰有限公司",
+  "title": "嵌入式 AI 工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-025",
+  "posted_date": "2026-04-25",
+  "expires_at": "2026-08-25",
+  "job_type": "AI 应用(嵌入式)",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责端侧 AI 推理的嵌入式实现,面向智能硬件场景。",
+  "requirements": [
+    "C/C++",
+    "嵌入式开发/单片机",
+    "RTOS",
+    "端侧推理框架"
+  ],
+  "responsibilities": [
+    "嵌入式 AI 推理移植",
+    "硬件驱动开发"
+  ]
+}

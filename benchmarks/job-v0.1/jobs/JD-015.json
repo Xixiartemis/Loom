@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-015",
+  "company": "深圳市质量立方科技有限公司",
+  "title": "AI 产品测试开发工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-015",
+  "posted_date": "2026-05-14",
+  "expires_at": "2026-09-14",
+  "job_type": "测试开发",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责 AI 产品的测试体系与自动化建设,保障 AI 功能质量。",
+  "requirements": [
+    "测试框架",
+    "Python",
+    "AI 产品测试",
+    "自动化测试"
+  ],
+  "responsibilities": [
+    "AI 功能测试用例设计",
+    "自动化测试脚本",
+    "质量数据看板"
+  ]
+}

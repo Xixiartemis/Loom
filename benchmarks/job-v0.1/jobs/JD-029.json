@@ -1,0 +1,26 @@
+{
+  "job_id": "JD-029",
+  "company": "深圳市迟暮科技有限公司",
+  "title": "AI Agent 应用开发工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-029",
+  "posted_date": "2026-02-15",
+  "expires_at": "2026-05-31",
+  "job_type": "AI Agent",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "1 年以上生产环境 Agent 开发经验",
+  "jd_text": "招聘具备生产级 Agent 开发经验的工程师;注意:本岗位发布已超过有效期。",
+  "requirements": [
+    "Python",
+    "Agent 生产环境经验(1 年以上)",
+    "LLM API",
+    "React 基础"
+  ],
+  "responsibilities": [
+    "生产级 Agent 开发",
+    "Agent 稳定性保障"
+  ]
+}

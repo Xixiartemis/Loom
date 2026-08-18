@@ -1,0 +1,66 @@
+{
+  "version": "candidate_profile_v1",
+  "candidate_id": "CAND-001",
+  "name": "张一诺",
+  "education": {
+    "degree": "本科",
+    "major": "计算机科学与技术",
+    "school": "深圳大学",
+    "graduation_year": 2026,
+    "graduation_month": 6
+  },
+  "skills": {
+    "frontend": ["React", "TypeScript", "Vite", "Webpack", "Tailwind CSS"],
+    "backend": ["Python", "FastAPI", "Node.js", "MySQL"],
+    "ai_application": [
+      "LLM API 调用", "OpenAI API", "DeepSeek API", "RAG 基础",
+      "Prompt 工程", "Coze", "Dify", "Agent 编排", "客服机器人"
+    ],
+    "other": ["Git", "Docker 基础", "Linux 基础"]
+  },
+  "skill_flat": [
+    "React", "TypeScript", "Vite", "Webpack", "Tailwind CSS",
+    "Python", "FastAPI", "Node.js", "MySQL",
+    "LLM API 调用", "OpenAI API", "DeepSeek API", "RAG 基础",
+    "Prompt 工程", "Coze", "Dify", "Agent 编排", "客服机器人",
+    "Git", "Docker 基础", "Linux 基础"
+  ],
+  "projects": [
+    {
+      "name": "AI 简历助手",
+      "role": "全栈开发",
+      "stack": ["React", "FastAPI", "LLM API"],
+      "description": "简历解析与优化建议工具,LLM 调用链路 + 前端交互 + Markdown 报告"
+    },
+    {
+      "name": "校园二手交易平台",
+      "role": "全栈开发",
+      "stack": ["React", "Node.js", "MySQL"],
+      "description": "商品发布/搜索/订单全流程,校园内测日活约 200"
+    },
+    {
+      "name": "客服 Agent 机器人",
+      "role": "AI 应用开发",
+      "stack": ["Coze", "Dify", "RAG"],
+      "description": "知识库分块、召回链路、多轮对话流程"
+    }
+  ],
+  "experience": [
+    {
+      "company": "深圳市星语智能科技有限公司",
+      "role": "AI 应用开发实习生",
+      "period": "2025.06 – 2025.09",
+      "duration_months": 3,
+      "highlights": ["LLM API 网关封装", "Agent 流程搭建", "AI 应用前端页面与接口联调"]
+    },
+    {
+      "company": "广州市轻舟互联网有限公司",
+      "role": "前端开发实习生",
+      "period": "2024.07 – 2024.10",
+      "duration_months": 3,
+      "highlights": ["React 组件库维护", "3 个业务页面开发"]
+    }
+  ],
+  "total_experience_months": 6,
+  "awards": ["深圳大学程序设计竞赛二等奖(2024)", "英语 CET-6"]
+}

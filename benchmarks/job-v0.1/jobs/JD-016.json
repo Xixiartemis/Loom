@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-016",
+  "company": "深圳市数据星河科技有限公司",
+  "title": "数据分析工程师(AI 方向)",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-016",
+  "posted_date": "2026-05-16",
+  "expires_at": "2026-09-16",
+  "job_type": "AI 应用",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责业务数据分析与 AI 辅助分析应用开发。",
+  "requirements": [
+    "SQL",
+    "Python 数据分析",
+    "机器学习基础",
+    "BI 工具"
+  ],
+  "responsibilities": [
+    "数据报表开发",
+    "分析模型搭建",
+    "AI 辅助分析应用"
+  ]
+}

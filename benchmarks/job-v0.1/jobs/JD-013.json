@@ -1,0 +1,27 @@
+{
+  "job_id": "JD-013",
+  "company": "深圳市星辰后端科技有限公司",
+  "title": "后端开发工程师",
+  "location": "深圳",
+  "remote": false,
+  "source": "校招官网",
+  "url": "https://careers.example.com/jobs/jd-013",
+  "posted_date": "2026-04-15",
+  "expires_at": "2026-08-15",
+  "job_type": "普通后端",
+  "degree_required": "本科",
+  "graduate_year_required": "2026",
+  "experience_required": "应届",
+  "jd_text": "负责业务系统后端开发,支撑高并发交易场景。",
+  "requirements": [
+    "Java/Spring Boot",
+    "MySQL",
+    "分布式基础",
+    "接口设计与性能优化"
+  ],
+  "responsibilities": [
+    "业务接口开发",
+    "数据库表设计",
+    "线上问题排查"
+  ]
+}
