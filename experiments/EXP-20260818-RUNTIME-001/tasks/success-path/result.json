@@ -1,0 +1,13 @@
+{
+  "run_id": "1afde0d7005840e6a55d9798300c526a",
+  "run_status": "COMPLETED",
+  "task_status": "COMPLETED",
+  "attempt_count": 1,
+  "expected": "success-path -> verify",
+  "passed": true,
+  "notes": "",
+  "run_result": {
+    "output": "mock-output:success-path:attempt-1",
+    "status": "SUCCESS"
+  }
+}

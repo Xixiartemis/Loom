@@ -1,0 +1,10 @@
+{
+  "run_id": "65f255d608de47a4b49d2feedcf03690",
+  "run_status": "ESCALATED",
+  "task_status": "ESCALATED",
+  "attempt_count": 3,
+  "expected": "three-fail-escalate -> _verify_three_fail",
+  "passed": true,
+  "notes": "",
+  "run_result": null
+}

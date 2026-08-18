@@ -1,0 +1,13 @@
+{
+  "id": "4fbfaba7debe4a3c82d143494d17d054",
+  "project_id": "276523c008294b01bd3950ccc2bccaa5",
+  "title": "success-path",
+  "objective": "Stage 0 scenario: success-path (MockExecutor, deterministic)",
+  "constraints": [],
+  "acceptance_criteria": [],
+  "status": "COMPLETED",
+  "max_attempts": 3,
+  "timeout_seconds": 5.0,
+  "created_at": "2026-08-18T08:51:07.902779",
+  "updated_at": "2026-08-18T08:51:07.987992"
+}

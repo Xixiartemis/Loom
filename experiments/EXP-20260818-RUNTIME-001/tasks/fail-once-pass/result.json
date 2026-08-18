@@ -1,0 +1,13 @@
+{
+  "run_id": "ff52eee3748e4a86bcd034ef3409543d",
+  "run_status": "COMPLETED",
+  "task_status": "COMPLETED",
+  "attempt_count": 2,
+  "expected": "fail-once-pass -> _verify_fail_once",
+  "passed": true,
+  "notes": "",
+  "run_result": {
+    "output": "mock-output:fail-once-pass:attempt-2",
+    "status": "SUCCESS"
+  }
+}

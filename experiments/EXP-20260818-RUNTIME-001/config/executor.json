@@ -1,0 +1,7 @@
+{
+  "executor": "MockExecutor",
+  "provider": "mock",
+  "model": "mock-v0",
+  "timeout": 5.0,
+  "max_attempts": 3
+}

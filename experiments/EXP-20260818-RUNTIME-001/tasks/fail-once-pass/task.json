@@ -1,0 +1,13 @@
+{
+  "id": "3b94c93aba374ffcaf8ac6ef9f00ad9d",
+  "project_id": "276523c008294b01bd3950ccc2bccaa5",
+  "title": "fail-once-pass",
+  "objective": "Stage 0 scenario: fail-once-pass (MockExecutor, deterministic)",
+  "constraints": [],
+  "acceptance_criteria": [],
+  "status": "COMPLETED",
+  "max_attempts": 3,
+  "timeout_seconds": 5.0,
+  "created_at": "2026-08-18T08:51:07.999142",
+  "updated_at": "2026-08-18T08:51:08.112103"
+}

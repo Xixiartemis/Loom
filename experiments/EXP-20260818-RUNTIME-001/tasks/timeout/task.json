@@ -1,0 +1,13 @@
+{
+  "id": "addd5b13248f403b9b9817ea20f1d150",
+  "project_id": "276523c008294b01bd3950ccc2bccaa5",
+  "title": "timeout",
+  "objective": "Stage 0 scenario: timeout (MockExecutor, deterministic)",
+  "constraints": [],
+  "acceptance_criteria": [],
+  "status": "ESCALATED",
+  "max_attempts": 3,
+  "timeout_seconds": 2.0,
+  "created_at": "2026-08-18T08:51:08.122520",
+  "updated_at": "2026-08-18T08:51:14.297897"
+}

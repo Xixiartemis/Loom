@@ -1,0 +1,10 @@
+{
+  "run_id": "00a5e3c095f84a479fe20f5ee2f0e8fe",
+  "run_status": "ESCALATED",
+  "task_status": "ESCALATED",
+  "attempt_count": 3,
+  "expected": "crash -> _verify_crash",
+  "passed": true,
+  "notes": "reason=crash on every EXECUTOR_FAILED",
+  "run_result": null
+}
