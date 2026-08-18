@@ -1,0 +1,479 @@
+[
+  {
+    "job_id": "JD-001",
+    "fit": "HIGH",
+    "score": 96.0,
+    "evidence": [
+      "React/TypeScript 前端开发",
+      "Python 后端开发",
+      "LLM API 集成",
+      "Agent 应用开发经验(项目或实习)"
+    ],
+    "risks": [
+      "未匹配要求:良好的沟通与文档能力"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-002",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "React/TypeScript",
+      "Python/FastAPI",
+      "LLM API 调用"
+    ],
+    "risks": [
+      "未匹配要求:全栈项目经验"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-003",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "Python",
+      "Agent 编排(Coze/Dify 或 LangChain 均可)",
+      "RAG 基础"
+    ],
+    "risks": [
+      "未匹配要求:多轮对话系统理解"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-004",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "React/TypeScript",
+      "前端工程化(Vite/Webpack)",
+      "LLM 交互界面经验"
+    ],
+    "risks": [
+      "未匹配要求:组件化开发"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-005",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "LLM API(OpenAI/DeepSeek)",
+      "Python",
+      "React 基础"
+    ],
+    "risks": [
+      "未匹配要求:代码生成/代码分析工具理解"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-006",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "LLM API",
+      "RAG",
+      "Python"
+    ],
+    "risks": [
+      "未匹配要求:远程协作能力"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-007",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "Python/FastAPI",
+      "LLM API",
+      "MySQL"
+    ],
+    "risks": [
+      "未匹配要求:后端服务开发"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-008",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "React/Node.js",
+      "Python",
+      "LLM API"
+    ],
+    "risks": [
+      "未匹配要求:全栈项目经验"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-009",
+    "fit": "HIGH",
+    "score": 96.0,
+    "evidence": [
+      "Python",
+      "Agent 框架(Coze/Dify 等)",
+      "LLM API",
+      "Prompt 工程"
+    ],
+    "risks": [
+      "未匹配要求:客服/助手类产品经验"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-010",
+    "fit": "HIGH",
+    "score": 95.0,
+    "evidence": [
+      "React",
+      "LLM API",
+      "Python"
+    ],
+    "risks": [
+      "未匹配要求:智能体应用"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-011",
+    "fit": "MEDIUM",
+    "score": 53.0,
+    "evidence": [
+      "Docker/K8s",
+      "Python"
+    ],
+    "risks": [
+      "短板:Docker/K8s",
+      "短板:GPU 推理部署",
+      "未匹配要求:GPU 推理部署",
+      "未匹配要求:云服务(AWS/阿里云)"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-012",
+    "fit": "MEDIUM",
+    "score": 56.0,
+    "evidence": [
+      "部分 LLM 应用"
+    ],
+    "risks": [
+      "短板:模型微调/训练",
+      "未匹配要求:PyTorch",
+      "未匹配要求:模型微调/训练"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-013",
+    "fit": "MEDIUM",
+    "score": 42.0,
+    "evidence": [
+      "MySQL"
+    ],
+    "risks": [
+      "短板:Java/Spring Boot",
+      "未匹配要求:Java/Spring Boot",
+      "未匹配要求:分布式基础"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-014",
+    "fit": "MEDIUM",
+    "score": 50.0,
+    "evidence": [
+      "React/TypeScript"
+    ],
+    "risks": [
+      "未匹配要求:前端工程化",
+      "未匹配要求:性能优化"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-015",
+    "fit": "MEDIUM",
+    "score": 85.0,
+    "evidence": [
+      "Python"
+    ],
+    "risks": [
+      "未匹配要求:测试框架",
+      "未匹配要求:AI 产品测试"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-016",
+    "fit": "MEDIUM",
+    "score": 56.0,
+    "evidence": [
+      "Python 数据分析"
+    ],
+    "risks": [
+      "短板:BI 工具",
+      "未匹配要求:SQL",
+      "未匹配要求:机器学习基础"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-017",
+    "fit": "MEDIUM",
+    "score": 79.0,
+    "evidence": [
+      "LLM 应用",
+      "Docker/K8s 部署",
+      "Python/React"
+    ],
+    "risks": [
+      "短板:Docker/K8s 部署",
+      "短板:CI/CD",
+      "未匹配要求:CI/CD"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-018",
+    "fit": "MEDIUM",
+    "score": 74.0,
+    "evidence": [
+      "React",
+      "TypeScript"
+    ],
+    "risks": [
+      "短板:WebGL/Three.js",
+      "短板:3D 渲染",
+      "未匹配要求:WebGL/Three.js",
+      "未匹配要求:3D 渲染"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-019",
+    "fit": "MEDIUM",
+    "score": 74.0,
+    "evidence": [
+      "RAG 深度",
+      "Python"
+    ],
+    "risks": [
+      "短板:Milvus/向量数据库",
+      "短板:检索优化",
+      "未匹配要求:Milvus/向量数据库",
+      "未匹配要求:检索优化"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-020",
+    "fit": "MEDIUM",
+    "score": 90.0,
+    "evidence": [
+      "LLM 应用",
+      "React/Python"
+    ],
+    "risks": [
+      "未匹配要求:加分:硕士学历",
+      "未匹配要求:加分:开源项目",
+      "优先条件(硕士/博士)不满足"
+    ],
+    "hard_constraints_pass": true,
+    "should_apply": true,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-021",
+    "fit": "LOW",
+    "score": 21.7,
+    "evidence": [
+      "LLM API",
+      "Python"
+    ],
+    "risks": [
+      "毕业年份:岗位要求2025届,候选人为2026届"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-022",
+    "fit": "LOW",
+    "score": 22.5,
+    "evidence": [
+      "React/TypeScript",
+      "Python/FastAPI",
+      "LLM API"
+    ],
+    "risks": [
+      "学历:岗位要求硕士,本科学历不满足"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-023",
+    "fit": "LOW",
+    "score": 21.7,
+    "evidence": [
+      "LLM API",
+      "Python"
+    ],
+    "risks": [
+      "地点:岗位在北京,候选人偏好为深圳/广州/远程"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-024",
+    "fit": "LOW",
+    "score": 21.7,
+    "evidence": [
+      "React/TypeScript",
+      "LLM 交互界面"
+    ],
+    "risks": [
+      "地点:岗位在上海,候选人偏好为深圳/广州/远程"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-025",
+    "fit": "LOW",
+    "score": 15.0,
+    "evidence": [],
+    "risks": [
+      "技能:核心要求(C/C++; 嵌入式开发/单片机; RTOS)与候选人技能不匹配"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-026",
+    "fit": "LOW",
+    "score": 15.0,
+    "evidence": [],
+    "risks": [
+      "学历:岗位要求硕士,本科学历不满足",
+      "技能:核心要求(预训练/RLHF; PyTorch 底层; 分布式训练)与候选人技能不匹配"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-027",
+    "fit": "LOW",
+    "score": 15.0,
+    "evidence": [],
+    "risks": [
+      "学历:岗位要求硕士,本科学历不满足",
+      "地点:岗位在上海,候选人偏好为深圳/广州/远程"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-028",
+    "fit": "LOW",
+    "score": 21.7,
+    "evidence": [
+      "React/TypeScript",
+      "LLM 交互界面"
+    ],
+    "risks": [
+      "毕业年份:岗位要求2025届,候选人为2026届"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-029",
+    "fit": "LOW",
+    "score": 25.0,
+    "evidence": [
+      "Python",
+      "Agent 生产环境经验(1 年以上)",
+      "LLM API",
+      "React 基础"
+    ],
+    "risks": [
+      "经验:岗位要求1 年以上生产环境 Agent 开发经验,候选人仅有 6 个月实习/工作经验"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  },
+  {
+    "job_id": "JD-030",
+    "fit": "LOW",
+    "score": 25.0,
+    "evidence": [
+      "Python",
+      "Agent 生产环境经验(1 年以上)",
+      "LLM API",
+      "React 基础"
+    ],
+    "risks": [
+      "经验:岗位要求1 年以上生产环境 Agent 开发经验,候选人仅有 6 个月实习/工作经验"
+    ],
+    "hard_constraints_pass": false,
+    "should_apply": false,
+    "source": "rule"
+  }
+]

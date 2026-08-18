@@ -1,0 +1,31 @@
+{
+  "experiment_id": "EXP-20260818-JOB-001",
+  "kind": "JOB_BENCHMARK",
+  "timestamp": "2026-08-18T09:25:13.554159+00:00",
+  "git_commit": "be762af",
+  "branch": "main",
+  "dirty_workspace": false,
+  "dataset_id": "JOB-V0.1",
+  "ground_truth_status": "{'DRAFT': 30}",
+  "predictor": "rule",
+  "model": null,
+  "provider": "mock",
+  "harness_version": "HV-0.2",
+  "context_policy_version": "CP-1",
+  "recovery": "OFF",
+  "metrics": {
+    "n_jobs": 30,
+    "hard_constraint_accuracy": 1.0,
+    "fit_classification_accuracy": 1.0,
+    "precision_at_5": 1.0,
+    "recall_at_10": 0.5,
+    "ranking_quality_ndcg10": 1.0,
+    "evidence_accuracy": 0.8056,
+    "evidence_coverage": 0.6811,
+    "hallucination_rate": 0.0,
+    "duplicate_detection_rate": 1.0,
+    "expired_job_detection_rate": 1.0,
+    "should_apply_precision": 1.0,
+    "should_apply_recall": 1.0
+  }
+}

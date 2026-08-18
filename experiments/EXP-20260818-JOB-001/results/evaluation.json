@@ -1,0 +1,302 @@
+[
+  {
+    "job_id": "JD-001",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.75,
+    "evidence_coverage": 0.75,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-002",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.75,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-003",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.667,
+    "evidence_coverage": 0.5,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-004",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.333,
+    "evidence_coverage": 0.333,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-005",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.75,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-006",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.75,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-007",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-008",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.75,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-009",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.75,
+    "evidence_coverage": 0.6,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-010",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.75,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-011",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.5,
+    "evidence_coverage": 0.5,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-012",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.0,
+    "evidence_coverage": 0.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-013",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.5,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-014",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.333,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-015",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.5,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-016",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.5,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-017",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.667,
+    "evidence_coverage": 0.667,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-018",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-019",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.5,
+    "evidence_coverage": 0.5,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-020",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 0.667,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-021",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-022",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-023",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-024",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-025",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.0,
+    "evidence_coverage": 0.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-026",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-027",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-028",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 1.0,
+    "evidence_coverage": 1.0,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-029",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.5,
+    "evidence_coverage": 0.667,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  },
+  {
+    "job_id": "JD-030",
+    "hard_correct": true,
+    "fit_correct": true,
+    "apply_correct": true,
+    "evidence_hit": 0.5,
+    "evidence_coverage": 0.667,
+    "hallucination": false,
+    "grounded_ratio": 1.0
+  }
+]
