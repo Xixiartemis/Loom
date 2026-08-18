@@ -1,0 +1,20 @@
+{
+  "experiment_id": "EXP-20260818-RUNTIME-002",
+  "timestamp": "2026-08-18T09:00:52.893527+00:00",
+  "git_commit": "327fb20",
+  "branch": "main",
+  "dirty_workspace": false,
+  "harness_version": "HV-0.2",
+  "dataset_version": "RUNTIME-V0.1",
+  "context_policy_version": "CP-2",
+  "executor": "MockExecutor",
+  "provider": "mock",
+  "model": "mock-v0",
+  "timeout": 10.0,
+  "max_attempts": 3,
+  "environment": {
+    "python": "3.11.11",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "hostname": "wenshiyu"
+  }
+}

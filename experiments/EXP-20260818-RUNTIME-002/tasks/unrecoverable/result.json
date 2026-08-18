@@ -1,0 +1,10 @@
+{
+  "run_id": "d5294fb7333448009ad44e3960d9404d",
+  "run_status": "ESCALATED",
+  "task_status": "ESCALATED",
+  "attempt_count": 3,
+  "expected": "unrecoverable (Phase B gate)",
+  "passed": true,
+  "notes": "3 failures → 3 reports → RETRY/RETRY/ESCALATE",
+  "run_result": null
+}

@@ -1,0 +1,14 @@
+{
+  "run_id": "0c3ab70c39bb41009fed0167fe3274c4",
+  "run_status": "COMPLETED",
+  "task_status": "COMPLETED",
+  "attempt_count": 2,
+  "expected": "validation-feedback (Phase B gate)",
+  "passed": true,
+  "notes": "VALIDATION_FAILED→CLASSIFY→RECOVER→VALIDATION_PASSED",
+  "run_result": {
+    "output": "expected:ok",
+    "status": "SUCCESS",
+    "validation": true
+  }
+}

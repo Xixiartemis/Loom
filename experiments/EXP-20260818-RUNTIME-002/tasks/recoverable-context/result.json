@@ -1,0 +1,14 @@
+{
+  "run_id": "3c8534aaca9b4413a0c353b27a2cc2a6",
+  "run_status": "COMPLETED",
+  "task_status": "COMPLETED",
+  "attempt_count": 2,
+  "expected": "recoverable-context (Phase B gate)",
+  "passed": true,
+  "notes": "FAIL→CLASSIFY(MISSING_CONTEXT)→RECOVER→PASS",
+  "run_result": {
+    "output": "mock-output-recovered",
+    "status": "SUCCESS",
+    "validation": true
+  }
+}

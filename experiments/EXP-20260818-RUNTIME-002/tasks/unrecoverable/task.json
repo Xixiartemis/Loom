@@ -1,0 +1,13 @@
+{
+  "id": "3524864409ab4914af256429ca801055",
+  "project_id": "276523c008294b01bd3950ccc2bccaa5",
+  "title": "unrecoverable",
+  "objective": "Stage B scenario: unrecoverable (validation + recovery pipeline)",
+  "constraints": [],
+  "acceptance_criteria": [],
+  "status": "ESCALATED",
+  "max_attempts": 3,
+  "timeout_seconds": 10.0,
+  "created_at": "2026-08-18T09:00:52.040065",
+  "updated_at": "2026-08-18T09:00:52.754802"
+}
