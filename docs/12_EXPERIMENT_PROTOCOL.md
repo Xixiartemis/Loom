@@ -6,8 +6,28 @@
 ## Experiment Identity
 每次正式实验生成唯一 `experiment_id`。
 
-建议格式：
-`EXP-YYYYMMDD-HVxx-CPxx-MODELxx`
+### 格式(以代码实现为准,2026-08-18 定稿)
+
+```text
+EXP-YYYYMMDD-<AREA>-<NNN>
+```
+
+- `YYYYMMDD`：创建日期(UTC)。
+- `<AREA>`：实验领域,如 `RUNTIME`(运行时/恢复)、`JOB`(岗位匹配)、`SWE`(编码)。
+- `<NNN>`：该领域内三位序号,从 `001` 递增,只增不覆盖。
+
+示例：
+
+```text
+EXP-20260818-RUNTIME-001
+EXP-20260818-RUNTIME-002
+EXP-20260819-JOB-001
+EXP-20260819-JOB-002
+```
+
+**设计决策**：详细配置(Harness Version、Context Policy、模型、provider、超时等)
+统一记录在 `experiment.json`,不塞进 ID。ID 只负责唯一、可读、可排序;
+把变量塞进 ID 会破坏可读性并让 ID 随配置漂移。
 
 ## 必须记录
 - experiment_id
@@ -46,11 +66,15 @@ Benchmark Task / JD / Ground Truth 发生改变：
 - **H2**：Agent + Validator + Failure-aware Recovery
 - **H3**：H2 + Expanded Context Reconstruction
 
-## 第一批实验
-- **EXP-001**：CP-0，No Recovery
-- **EXP-002**：CP-0 + Validator + Basic Retry
-- **EXP-003**：CP-1 + Failure-aware Recovery
-- **EXP-004**：CP-2 + Expanded Context
+## 第一批实验(示例,按新 ID 格式)
+
+实际已跑实验：
+- **EXP-20260818-RUNTIME-001**：Stage 0,CP-0,No Recovery,MockExecutor(HV-0.1)
+- **EXP-20260818-RUNTIME-002**：Validation + Failure-aware Recovery,CP-2,MockExecutor(HV-0.2)
+
+规划中的 Job 系列：
+- **EXP-YYYYMMDD-JOB-001**：CP-1,Recovery OFF,固定低成本模型,30 JD Baseline
+- **EXP-YYYYMMDD-JOB-002**：CP-2,Recovery ON,同上 Dataset
 
 固定模型、Dataset、环境。
 

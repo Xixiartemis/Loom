@@ -18,18 +18,20 @@ uv run pytest               # 全部测试
 ## 目录结构
 
 ```
-docs/            项目规范(00–14)
+docs/            项目规范(00–14)+ ADR(docs/adr/)
 src/lhas/        LHAS 核心实现
 tests/           pytest 测试
 tasks/           开发任务 Spec(LHAS-PHASE-A-CORE-01 等)
 experiments/     实验记录(EXP-*,只新增不覆盖)
+benchmarks/      固定 Benchmark Dataset(如 job-v0.1)
 data/            运行数据(SQLite + 日志,gitignored)
 ```
 
 ## 阶段状态
 
-- Phase A — Core Runtime(Task/Run/Attempt/Event + SQLite + MockExecutor + Orchestrator):进行中
-- Phase B — Validation / Recovery:计划中
+- Phase A — Core Runtime(Task/Run/Attempt/Event + SQLite + MockExecutor + Orchestrator):✅ 完成,EXP-20260818-RUNTIME-001
+- Phase B — Validation / Recovery:✅ 完成,EXP-20260818-RUNTIME-002
+- Phase C — Job Benchmark:C0(数据集)/ C1(Ground Truth)/ C2(Evaluator)/ C3(AgentExecutor)进行中
 - 后续阶段见 `docs/14_ROADMAP.md`
 
 ## 实验纪律
