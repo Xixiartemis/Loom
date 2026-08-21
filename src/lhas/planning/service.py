@@ -101,6 +101,8 @@ class PlanExecutionService:
         plans=PlanRepository(self.db); tasks=TaskRepository(self.db); scheduler=TaskGraphScheduler()
         execution_context={"runtime":{**context,"goal_id":goal.id},"steps":{}}
         for s in plan.steps:
+            if s.id in approved_step_ids and s.status == PlanStepStatus.WAITING_FOR_HUMAN_APPROVAL:
+                s.status = PlanStepStatus.PENDING
             if s.status == PlanStepStatus.COMPLETED:
                 execution_context["steps"][s.id]=s.execution_context.get("steps",{}).get(s.id,{"capability":s.capability,"output":s.output,"artifacts":{},"usage":{}})
         while True:
@@ -129,7 +131,9 @@ class PlanExecutionService:
                     try: step.output=json.loads(step.output)
                     except json.JSONDecodeError: pass
                 attempts=AttemptRepository(self.db).list_for_run(run.id); raw=json.loads(attempts[-1].executor_result or "{}") if attempts and attempts[-1].executor_result else {}
-                rec={"capability":step.capability,"output":step.output,"artifacts":raw.get("artifacts",{}),"usage":raw.get("usage",{})}; execution_context["steps"][step.id]=rec; step.execution_context={"runtime":execution_context["runtime"],"steps":dict(execution_context["steps"])}; step.status=PlanStepStatus.COMPLETED; self._emit(EventType.PLAN_STEP_COMPLETED,{"plan_id":plan.id,"step_id":step.id,"run_id":run.id}); plans.update(plan)
+                rec={"capability":step.capability,"output":step.output,"artifacts":raw.get("artifacts",{}),"usage":raw.get("usage",{})}; execution_context["steps"][step.id]=rec
+                persisted_context=build_step_dependency_context(plan,step,execution_context); persisted_context["steps"][step.id]=rec; step.execution_context=persisted_context
+                step.status=PlanStepStatus.COMPLETED; self._emit(EventType.PLAN_STEP_COMPLETED,{"plan_id":plan.id,"step_id":step.id,"run_id":run.id}); plans.update(plan)
             schedule=scheduler.calculate(plan)
             if schedule.blocked_steps:
                 continue

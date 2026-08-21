@@ -39,9 +39,27 @@ def test_dependency_approval_resume_same_plan(db):
     project=Project(name="graph-approval"); ProjectRepository(db).create(project); goal=Goal(project_id=project.id,objective="graph")
     a=PlanStep(id="a",title="a",objective="a",capability="a"); b=PlanStep(id="b",title="b",objective="b",capability="b",depends_on=["a"]); c=PlanStep(id="c",title="c",objective="c",capability="c",depends_on=["a"]); d=PlanStep(id="d",title="d",objective="d",capability="d",depends_on=["b"])
     plan=Plan(goal_id=goal.id,mode=PlanMode.SIMPLE_DEPENDENCY,steps=[a,b,c,d]); reg=ToolRegistry()
-    for name,gated in (("a",False),("b",True),("c",False),("d",False)): reg.register(FakeTool(CapabilitySpec(name=name,description=name,side_effect=gated,requires_human_approval=gated),lambda r,n=name:n))
+    counts={n:0 for n in "abcd"}
+    def counted(name):
+        def run(r): counts[name]+=1; return name
+        return run
+    for name,gated in (("a",False),("b",True),("c",False),("d",False)): reg.register(FakeTool(CapabilitySpec(name=name,description=name,side_effect=gated,requires_human_approval=gated),counted(name)))
     svc=PlanExecutionService(db,FixedPlanner(plan),reg); waiting=asyncio.run(svc.execute_goal(goal)); assert waiting.status==PlanStatus.WAITING_FOR_HUMAN_APPROVAL and waiting.steps[2].status==PlanStepStatus.COMPLETED
-    resumed=asyncio.run(svc.resume_after_approval(waiting.id,goal,"b")); assert resumed.id==waiting.id and resumed.status==PlanStatus.COMPLETED and resumed.steps[0].status==PlanStepStatus.COMPLETED
+    resumed=asyncio.run(svc.resume_after_approval(waiting.id,goal,"b")); assert resumed.id==waiting.id and resumed.status==PlanStatus.COMPLETED and resumed.steps[0].status==PlanStepStatus.COMPLETED and counts=={"a":1,"b":1,"c":1,"d":1}
+
+def test_true_diamond_order_and_context_persistence(db):
+    project=Project(name="diamond-context"); ProjectRepository(db).create(project); goal=Goal(project_id=project.id,objective="diamond")
+    steps=[PlanStep(id="a",title="a",objective="a",capability="a"),PlanStep(id="b",title="b",objective="b",capability="b",depends_on=["a"]),PlanStep(id="c",title="c",objective="c",capability="c",depends_on=["a"]),PlanStep(id="d",title="d",objective="d",capability="d",depends_on=["b","c"])]
+    plan=Plan(goal_id=goal.id,mode=PlanMode.SIMPLE_DEPENDENCY,steps=steps); log=[]; contexts={}
+    def tool(name):
+        def run(req): log.append(name); contexts[name]=req.context; return name
+        return run
+    reg=ToolRegistry()
+    for name in "abcd": reg.register(FakeTool(CapabilitySpec(name=name,description=name),tool(name)))
+    result=asyncio.run(PlanExecutionService(db,FixedPlanner(plan),reg).execute_goal(goal)); assert [x for x in log]==["a","b","c","d"]
+    assert "a" in contexts["b"]["steps"] and "c" not in contexts["b"]["steps"]
+    assert "c" in contexts["d"]["steps"] and "b" in contexts["d"]["steps"]
+    persisted={s.id:s.execution_context for s in result.steps}; assert "c" not in persisted["b"]["steps"] and "a" in persisted["b"]["steps"]
 
 def test_dependency_context_isolation():
     p=Plan(goal_id="g",mode=PlanMode.SIMPLE_DEPENDENCY,steps=[PlanStep(id="a",title="a",objective="a",capability="a"),PlanStep(id="c",title="c",objective="c",capability="c"),PlanStep(id="b",title="b",objective="b",capability="b",depends_on=["a"])])
