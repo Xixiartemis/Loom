@@ -7,15 +7,20 @@ def canonical_url(url: str) -> str:
     p=urlsplit(url.strip()); return urlunsplit((p.scheme.lower(),p.netloc.lower(),p.path.rstrip("/"),p.query,""))
 
 def deduplicate_jobs(jobs: list[dict]) -> tuple[list[dict], int]:
-    seen=set(); out=[]; duplicates=0
+    seen_urls=set(); seen_hashes=set(); seen_names=set(); out=[]; duplicates=0
     for job in jobs:
-        key=(canonical_url(job.get("source_url","")) if job.get("source_url") else "", str(job.get("company","" )).strip().lower(), str(job.get("title","" )).strip().lower(), job.get("content_hash",""))
-        if key in seen: duplicates+=1; continue
-        seen.add(key); out.append(job)
+        url=canonical_url(job.get("source_url","")) if job.get("source_url") else ""
+        digest=job.get("content_hash",""); name=(str(job.get("company","")).strip().lower(),str(job.get("title","")).strip().lower())
+        duplicate=(bool(url) and url in seen_urls) or (bool(digest) and digest in seen_hashes) or (all(name) and name in seen_names)
+        if duplicate: duplicates+=1; continue
+        if url: seen_urls.add(url)
+        if digest: seen_hashes.add(digest)
+        if all(name): seen_names.add(name)
+        out.append(job)
     return out, duplicates
 
 def expiration_status(job: dict) -> str:
-    value=" ".join(str(job.get(k,"")) for k in ("status","deadline","text")).lower()
+    value=" ".join(str(job.get(k,"")) for k in ("status","deadline","text","jd_text","search_snippet")).lower()
     if any(x in value for x in ("closed","expired","no longer accepting")): return "expired"
     if job.get("deadline") or any(x in value for x in ("apply now","open position","accepting applications")): return "active"
     return "unknown"

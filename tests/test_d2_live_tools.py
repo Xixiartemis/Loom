@@ -3,6 +3,7 @@ from pathlib import Path
 from lhas.live_tools import ResumeReaderTool, WebFetchTool, WebSearchTool, SearchProvider, TavilySearchProvider
 import lhas.live_tools as live_tools
 import urllib.error
+import pytest
 from lhas.tools.protocol import ToolRequest, ToolResult, ToolResultStatus
 from lhas.job.live_pipeline import deduplicate_jobs, expiration_status, shortlist_record
 from lhas import HARNESS_VERSION
@@ -10,6 +11,8 @@ from lhas.planning.models import Goal
 from lhas.planning.planner import DeterministicPlanner
 from lhas.planning.service import PlanExecutionService
 from lhas.tools.registry import ToolRegistry
+from lhas.tools.fakes import FakeTool
+from lhas.tools.protocol import ToolResult
 from lhas.domain.models import Project
 from lhas.persistence.repositories import ProjectRepository
 
@@ -106,3 +109,34 @@ def test_semantic_pipeline_e2e(db,tmp_path,monkeypatch):
 def test_fetch_false_green_guards():
     empty=req("web.fetch",{}); empty.context={"steps":{"x":{"capability":"web.search","output":{"results":[]}}}}
     assert asyncio.run(WebFetchTool().execute(empty)).error_type == "NO_SEARCH_RESULTS"
+
+def test_expiration_live_path_and_rank_filter(db):
+    from lhas.live_tools import JobParseTool, JobRankTool
+    context={"steps":{"f":{"capability":"web.fetch","output":{"results":[{"url":"https://a","title":"A","text":"closed role","search_snippet":"closed"},{"url":"https://b","title":"B","text":"open position apply now","search_snippet":"open"}]}}}}
+    parsed=asyncio.run(JobParseTool().execute(req("job.parse",{}))); parsed
+    request=req("job.parse",{}); request.context=context
+    parsed=asyncio.run(JobParseTool().execute(request)); assert parsed.output["jobs"][0]["status"]=="expired"
+    rank=req("job.rank",{}); rank.context={"steps":{"m":{"capability":"job.match","output":{"jobs":[{**j,"match_score":1} for j in parsed.output["jobs"]]}}}}
+    result=asyncio.run(JobRankTool().execute(rank)); assert len(result.output["shortlist"])==1
+
+def test_all_fetch_failed_plan_recovery(db):
+    from lhas.domain.models import Project
+    from lhas.persistence.repositories import ProjectRepository
+    from lhas.planning.models import Goal, CapabilitySpec
+    from lhas.planning.planner import DeterministicPlanner
+    from lhas.planning.service import PlanExecutionService
+    from lhas.tools.protocol import ToolResultStatus
+    project=Project(name="all-fetch-fail"); ProjectRepository(db).create(project)
+    search=FakeTool(CapabilitySpec(name="web.search",description="search"),lambda r:{"results":[{"url":"https://x"}]})
+    fetch=FakeTool(CapabilitySpec(name="web.fetch",description="fetch"),lambda r:ToolResult(status=ToolResultStatus.FAILURE,error_type="NETWORK_ERROR",error_message="offline"))
+    reg=ToolRegistry(); reg.register(search); reg.register(fetch)
+    goal=Goal(project_id=project.id,objective="x",allowed_capabilities=["web.search","web.fetch"],metadata={"plan_steps":["web.search","web.fetch"]})
+    plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).execute_goal(goal)); assert plan.status.value=="FAILED" and plan.steps[1].status.value=="FAILED"
+
+def test_pdf_native_extraction(tmp_path):
+    pytest.importorskip("pypdf")
+    from pypdf import PdfWriter
+    p=tmp_path/"resume.pdf"; writer=PdfWriter(); writer.add_blank_page(width=72,height=72)
+    with p.open("wb") as fh: writer.write(fh)
+    result=asyncio.run(ResumeReaderTool().execute(req("document.resume.read",{"path":str(p)})))
+    assert result.error_type in {None,"EMPTY_CONTENT"}

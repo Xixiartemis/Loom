@@ -50,7 +50,10 @@ def goal_run(goal: str = typer.Option(...,"--goal"), file: Path = typer.Option(.
     print(f"GOAL {g.id}: {goal}")
     plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),registry).execute_goal(g,experiment_id=None,context={"live":True}))
     print(f"PLAN {plan.id} {plan.status.value}")
-    for s in plan.steps: print(f"STEP {s.capability} {s.status.value} task={s.task_id}")
+    for s in plan.steps:
+        print(f"STEP {s.capability} {s.status.value} task={s.task_id}")
+        if s.capability == "artifact.write" and s.status.value == "COMPLETED" and isinstance(s.output,dict) and s.output.get("artifact_path"):
+            print(f"ARTIFACT {s.output['artifact_path']}")
     db.close()
 
 @goal_app.command("inspect")

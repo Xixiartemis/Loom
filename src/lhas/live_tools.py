@@ -1,6 +1,6 @@
 """D2 real-tool adapters. Network access is explicit and provider-neutral."""
 from __future__ import annotations
-import hashlib, html, json, os, re, socket, urllib.error, urllib.parse, urllib.request
+import hashlib, html, ipaddress, json, os, re, socket, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -29,7 +29,8 @@ class ResumeReaderTool:
                     raw=z.read("word/document.xml").decode("utf-8")
                 text=" ".join(re.sub(r"<[^>]+>", " ", raw).split())
             elif suffix == ".pdf":
-                from pypdf import PdfReader
+                try: from pypdf import PdfReader
+                except ImportError: return _fail("PDF_DEPENDENCY_MISSING", "install with --extra live")
                 text="\n".join((page.extract_text() or "") for page in PdfReader(str(path)).pages)
                 if not text.strip(): return _fail("EMPTY_CONTENT", "PDF contains no extractable text")
                 if len(text.strip()) < 8: return _fail("EMPTY_CONTENT", "PDF text quality too low")
@@ -83,11 +84,18 @@ def _safe_url(raw: str) -> str:
     if p.scheme not in {"http","https"} or not p.hostname: raise ValueError("UNSUPPORTED_URL")
     host=p.hostname.lower()
     if host in {"localhost","metadata.google.internal"} or host.startswith("127.") or host.startswith("0.") or host.startswith("10.") or host.startswith("192.168.") or host.startswith("169.254.") or host.startswith("172.") and 16 <= int(host.split(".")[1]) <= 31: raise ValueError("SSRF_BLOCKED")
+    def check(ip):
+        addr=ipaddress.ip_address(ip)
+        if addr.is_loopback or addr.is_private or addr.is_link_local or addr.is_unspecified: raise ValueError("SSRF_BLOCKED")
     try:
-        ip=socket.gethostbyname(host)
-        if ip.startswith(("127.","10.","192.168.","169.254.")): raise ValueError("SSRF_BLOCKED")
+        for info in socket.getaddrinfo(host,None): check(info[4][0])
     except socket.gaierror: pass
     return raw
+
+class _SafeRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _safe_url(newurl)
+        return super().redirect_request(req,fp,code,msg,headers,newurl)
 
 class WebFetchTool:
     capability=CapabilitySpec(name="web.fetch",description="Fetch bounded HTTP content",input_schema={"url":"string"},output_schema={"url":"string","status_code":"integer","title":"string","text":"string"})
@@ -114,6 +122,7 @@ class WebFetchTool:
         try:
             req=urllib.request.Request(url,headers={"User-Agent":"LHAS-D2/0.1","Accept":"text/html,text/plain,application/pdf"})
             with urllib.request.urlopen(req,timeout=self.timeout) as resp:
+                _safe_url(resp.geturl() if hasattr(resp,"geturl") else url)
                 code=resp.status; ctype=resp.headers.get("Content-Type","")
                 if not any(x in ctype.lower() for x in ("text/", "json", "html", "xml", "pdf")): return _fail("UNSUPPORTED_CONTENT",ctype)
                 body=resp.read(self.max_bytes+1)
@@ -121,8 +130,9 @@ class WebFetchTool:
             text=html.unescape(re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>"," ",body.decode("utf-8","replace"),flags=re.I|re.S)).strip()
             if not text: return _fail("EMPTY_CONTENT",url)
             return ToolResult(status=ToolResultStatus.SUCCESS,output={"url":url,"status_code":code,"title":text[:200].splitlines()[0],"text":text,"captured_at":datetime.now(timezone.utc).isoformat(),"content_hash":hashlib.sha256(body).hexdigest()})
+        except ValueError as exc: return _fail("SSRF_BLOCKED",str(exc))
         except urllib.error.HTTPError as exc: return _fail("HTTP_4XX" if exc.code<500 else "HTTP_5XX",str(exc))
-        except TimeoutError: return _fail("TIMEOUT",url)
+        except (TimeoutError, socket.timeout): return _fail("TIMEOUT",url)
         except urllib.error.URLError as exc: return _fail("NETWORK_ERROR",str(exc))
         except Exception as exc: return _fail("NETWORK_ERROR",str(exc))
 
