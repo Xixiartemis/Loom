@@ -21,8 +21,15 @@ from lhas.persistence.repositories import AttemptRepository, ProjectRepository, 
 from lhas.stage0 import print_stage0, run_stage0
 from lhas.stageb import print_stageb, run_stageb
 from lhas.task_service import create_task
+from lhas.live_tools import build_live_registry
+from lhas.planning.models import Goal, CapabilitySpec
+from lhas.planning.planner import DeterministicPlanner
+from lhas.planning.service import PlanExecutionService
+from lhas.persistence.planning_repositories import GoalRepository, PlanRepository
 
 app = typer.Typer(help="LHAS — Long-Horizon Agent System runtime / harness CLI.")
+goal_app = typer.Typer(help="Run and inspect constrained goals")
+app.add_typer(goal_app, name="goal")
 
 
 def _open_db() -> Database:
@@ -31,6 +38,29 @@ def _open_db() -> Database:
     db = Database(path)
     db.init_db()
     return db
+
+@goal_app.command("run")
+def goal_run(goal: str = typer.Option(...,"--goal"), file: Path = typer.Option(...,"--file"), live: bool = typer.Option(False,"--live"), output_dir: Path = typer.Option(Path("artifacts"),"--output-dir")):
+    """Run the D2 smoke pipeline; real network requires --live."""
+    if not live: raise typer.BadParameter("real web capabilities require explicit --live")
+    db=_open_db(); projects=ProjectRepository(db); project=projects.get_by_name("D2-LIVE") or projects.create(Project(name="D2-LIVE"))
+    registry=build_live_registry(); names=["document.resume.read","web.search","web.fetch","job.parse","job.match","job.rank","artifact.write"]
+    g=Goal(project_id=project.id,objective=goal,allowed_capabilities=names,metadata={"plan_steps":names,"resume_path":str(file),"query":goal,"output_dir":str(output_dir)})
+    print(f"GOAL {g.id}: {goal}")
+    plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),registry).execute_goal(g,experiment_id=None,context={"live":True}))
+    print(f"PLAN {plan.id} {plan.status.value}")
+    for s in plan.steps: print(f"STEP {s.capability} {s.status.value} task={s.task_id}")
+    db.close()
+
+@goal_app.command("inspect")
+def goal_inspect(goal_id: str):
+    db=_open_db(); g=GoalRepository(db).get(goal_id)
+    if not g: raise typer.BadParameter(f"goal {goal_id} not found")
+    print(f"Goal {g.id}: {g.objective}")
+    # Plan ids are shown when available through event payloads.
+    for ev in EventStore(db).list_all():
+        if ev.event_type.value in {"PLAN_CREATED","PLAN_COMPLETED","PLAN_FAILED"} and ev.payload.get("plan",{}).get("goal_id")==goal_id: print(ev.event_type.value,ev.payload)
+    print(f"project_id={g.project_id} capabilities={g.allowed_capabilities}"); db.close()
 
 
 @app.command("init-db")
