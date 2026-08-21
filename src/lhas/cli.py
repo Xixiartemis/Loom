@@ -202,11 +202,16 @@ def jobbench(
     if status.get("DRAFT", 0):
         print("warning : ground truth is DRAFT — metrics are provisional until human review")
 
+    recorder = JobExperimentRecorder()
+    exp_id = experiment_id or recorder.next_id("JOB")
     as_of_date = date.fromisoformat(as_of) if as_of else None
     runtime_db = _open_db() if recovery else None
     if recovery and predictor != "llm":
         raise typer.BadParameter("--recovery currently requires --predictor llm")
-    result = run_job_bench(ds, predictor=predictor, as_of=as_of_date, runtime=recovery, db=runtime_db)
+    result = run_job_bench(
+        ds, predictor=predictor, as_of=as_of_date, runtime=recovery,
+        db=runtime_db, experiment_id=exp_id if recovery else None,
+    )
 
     m = result.metrics
     print("-" * 56)
@@ -229,8 +234,6 @@ def jobbench(
         if runtime_db is not None:
             runtime_db.close()
         return
-    recorder = JobExperimentRecorder()
-    exp_id = experiment_id or recorder.next_id("JOB")
     recorder.record(
         experiment_id=exp_id,
         dataset_id=ds.manifest.get("dataset_id", "unknown"),

@@ -61,6 +61,7 @@ class JobExperimentRecorder:
             "branch": git["branch"],
             "dirty_workspace": git["dirty_workspace"],
             "dataset_id": dataset_id,
+            "dataset_version": dataset_id,
             "ground_truth_status": ground_truth_status,
             "predictor": predictor,
             "model": model,
@@ -152,6 +153,14 @@ def _render_summary(experiment_id: str, git: dict[str, Any], metadata: dict[str,
         "",
         f"n_jobs: {m['n_jobs']}",
         "",
-        "purpose: baseline B0 — deterministic rule predictor, no model involved.",
+        _purpose_line(metadata),
     ]
     return "\n".join(lines) + "\n"
+
+
+def _purpose_line(metadata: dict[str, Any]) -> str:
+    if metadata["predictor"] == "rule" and metadata["recovery"] == "OFF":
+        return "purpose: baseline B0 — deterministic rule predictor, no model involved."
+    if metadata["recovery"] == "ON":
+        return "purpose: Job Runtime experiment — provider-backed predictor with validation and recovery."
+    return f"purpose: Job benchmark — predictor={metadata['predictor']}, recovery={metadata['recovery']}."

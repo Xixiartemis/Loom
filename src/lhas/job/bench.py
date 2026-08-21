@@ -50,6 +50,7 @@ def run_job_bench(
     as_of: Optional[date] = None,
     runtime: bool = False,
     db: Optional[Database] = None,
+    experiment_id: Optional[str] = None,
 ) -> JobBenchResult:
     """执行一轮 Job Benchmark。
 
@@ -63,7 +64,11 @@ def run_job_bench(
             raise ValueError("runtime=True currently requires predictor='llm'")
         if db is None:
             raise ValueError("runtime=True requires a Database so Task/Run/Attempt artifacts can be persisted")
-        predictions, runs, provider, model, model_config = _run_job_runtime(dataset, db=db, as_of=as_of)
+        if not experiment_id:
+            raise ValueError("runtime=True requires experiment_id for reproducible Run metadata")
+        predictions, runs, provider, model, model_config = _run_job_runtime(
+            dataset, db=db, as_of=as_of, experiment_id=experiment_id
+        )
         predictor = "llm-runtime"
     elif predict_fn is not None:
         predictions = [predict_fn(job) for job in dataset.ordered_jobs]
@@ -114,7 +119,13 @@ class _JobRuntimeOrchestrator(RecoveringOrchestrator):
         return payload
 
 
-def _run_job_runtime(dataset: JobDataset, *, db: Database, as_of: Optional[date] = None):
+def _run_job_runtime(
+    dataset: JobDataset,
+    *,
+    db: Database,
+    as_of: Optional[date] = None,
+    experiment_id: str,
+):
     """Run each JD through Task→Attempt→Validator→Recovery.
 
     This is the harness path for Recovery experiments.  Baseline ``run_job_bench``
@@ -137,6 +148,7 @@ def _run_job_runtime(dataset: JobDataset, *, db: Database, as_of: Optional[date]
         jobs_by_task[task.id] = job.model_dump(mode="json")
         task_ids.append(task.id)
 
+    from lhas import HARNESS_VERSION
     from lhas.executors.general import GeneralAgentExecutor, LLMClient, llm_config_from_env
     cfg = llm_config_from_env()
     client = LLMClient(**cfg)  # one provider client for the whole benchmark
@@ -154,10 +166,12 @@ def _run_job_runtime(dataset: JobDataset, *, db: Database, as_of: Optional[date]
         recovery_policy=DefaultRecoveryPolicy(context_policy="CP-2"),
         context_builder=context_builder,
         context_policy_version="CP-2",
+        harness_version=HARNESS_VERSION,
         executor_type="GeneralAgentExecutor",
-        provider="llm",
+        provider=cfg["provider"],
         model=cfg["model"],
         dataset_version=str(dataset.manifest.get("dataset_id", "JOB-V0.1")),
+        experiment_id=experiment_id,
     )
     runs = []
     predictions: list[MatchPrediction] = []

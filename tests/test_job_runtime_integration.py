@@ -20,6 +20,7 @@ from lhas.context_builder import ContextBuilder
 from lhas.job.bench import _JobRuntimeOrchestrator
 from lhas.job.recorder import JobExperimentRecorder
 from lhas.job.metrics import MetricsReport
+from lhas import HARNESS_VERSION
 
 
 DATASET = Path(__file__).resolve().parents[1] / "benchmarks" / "job-v0.1"
@@ -71,6 +72,11 @@ def test_job_failure_recovery_runs_through_runtime(make_task, db, tmp_path):
             },
         ),
         context_policy_version="CP-2",
+        harness_version=HARNESS_VERSION,
+        provider="fake-provider",
+        model="fake-model",
+        dataset_version="JOB-V0.1",
+        experiment_id="EXP-TEST-JOB-RUNTIME-001",
     )
 
     run = asyncio.run(orchestrator.execute_task(task.id))
@@ -104,7 +110,7 @@ def test_job_failure_recovery_runs_through_runtime(make_task, db, tmp_path):
         model="fake-model",
         provider="fake-provider",
         model_config={"base_url": "http://fake", "timeout": 5},
-        harness_version="HV-0.3",
+        harness_version=HARNESS_VERSION,
         context_policy_version="CP-2",
         recovery="ON",
         metrics=MetricsReport(
@@ -129,3 +135,7 @@ def test_job_failure_recovery_runs_through_runtime(make_task, db, tmp_path):
     assert (attempt_dir / "context.json").exists()
     assert (attempt_dir / "validation.json").exists()
     assert (attempt_dir / "recovery.json").exists()
+    run_metadata = json.loads((task_dir / "run.json").read_text(encoding="utf-8"))
+    for key in ("experiment_id", "harness_version", "provider", "model", "dataset_version"):
+        assert run_metadata[key] == metadata[key], key
+    assert "baseline B0" not in (exp_dir / "summary.md").read_text(encoding="utf-8")
