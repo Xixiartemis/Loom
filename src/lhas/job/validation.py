@@ -29,7 +29,7 @@ class JobMatchValidator:
         self._hard = RuleBasedMatcher(dataset.profile, dataset.goal)
         self._expiration = ExpirationValidator(as_of=as_of or dataset.as_of_date)
 
-    def validate(
+    async def validate(
         self,
         prediction: Optional[MatchPrediction] = None,
         *,

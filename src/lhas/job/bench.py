@@ -38,6 +38,8 @@ class JobBenchResult:
     evaluations: list[EvaluationResult]
     metrics: MetricsReport
     runs: list = field(default_factory=list)
+    provider: Optional[str] = None
+    model_config: dict = field(default_factory=dict)
 
 
 def run_job_bench(
@@ -61,26 +63,31 @@ def run_job_bench(
             raise ValueError("runtime=True currently requires predictor='llm'")
         if db is None:
             raise ValueError("runtime=True requires a Database so Task/Run/Attempt artifacts can be persisted")
-        predictions, runs = _run_job_runtime(dataset, db=db, as_of=as_of)
+        predictions, runs, provider, model, model_config = _run_job_runtime(dataset, db=db, as_of=as_of)
         predictor = "llm-runtime"
-        model = "llm"
     elif predict_fn is not None:
         predictions = [predict_fn(job) for job in dataset.ordered_jobs]
         model = "custom"
         runs = []
+        provider = "custom"
+        model_config = {}
     elif predictor == "rule":
         matcher = RuleBasedMatcher(dataset.profile, dataset.goal)
         predictions = [matcher.predict(job) for job in dataset.ordered_jobs]
         model = None
         runs = []
+        provider = "deterministic"
+        model_config = {}
     elif predictor == "llm":
         from lhas.executors.general import make_llm_predictor
 
         # Construct the client/executor once per benchmark, not once per JD.
         predict = make_llm_predictor(dataset)
         predictions = [predict(job) for job in dataset.ordered_jobs]
-        model = "llm"
+        model = predict.model
         runs = []
+        provider = predict.provider
+        model_config = predict.config
     else:
         raise ValueError(f"unknown predictor: {predictor}")
 
@@ -91,6 +98,8 @@ def run_job_bench(
         dataset=dataset, predictor=predictor, model=model,
         predictions=predictions, evaluations=evaluations, metrics=metrics,
         runs=runs,
+        provider=provider,
+        model_config=model_config,
     )
 
 
@@ -159,4 +168,5 @@ def _run_job_runtime(dataset: JobDataset, *, db: Database, as_of: Optional[date]
         if not attempts or not attempts[-1].output:
             raise RuntimeError(f"runtime produced no prediction for task {task_id}")
         predictions.append(MatchPrediction(**json.loads(attempts[-1].output)))
-    return predictions, runs
+    public_config = {k: v for k, v in cfg.items() if k != "api_key"}
+    return predictions, runs, cfg["provider"], cfg["model"], public_config

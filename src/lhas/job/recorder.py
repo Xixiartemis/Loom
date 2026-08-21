@@ -10,8 +10,12 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
-from lhas.experiments import git_head_info, next_experiment_id
+from lhas.experiments import ExperimentRecorder, TaskResult, git_head_info, next_experiment_id
 from lhas.job.metrics import MetricsReport
+from lhas.persistence.database import Database
+from lhas.persistence.repositories import AttemptRepository, TaskRepository
+from lhas.domain.enums import RunStatus
+from lhas.domain.models import Run
 
 
 class JobExperimentRecorder:
@@ -35,6 +39,9 @@ class JobExperimentRecorder:
         evaluations: list[dict[str, Any]],
         git: Optional[dict[str, Any]] = None,
         allow_dirty: bool = False,
+        model_config: Optional[dict[str, Any]] = None,
+        db: Optional[Database] = None,
+        runs: Optional[list[Run]] = None,
     ) -> Path:
         exp_dir = self.base_dir / experiment_id
         if exp_dir.exists():
@@ -58,6 +65,7 @@ class JobExperimentRecorder:
             "predictor": predictor,
             "model": model,
             "provider": provider,
+            "model_config": model_config or {},
             "harness_version": harness_version,
             "context_policy_version": context_policy_version,
             "recovery": recovery,
@@ -72,8 +80,38 @@ class JobExperimentRecorder:
         (exp_dir / "results" / "evaluation.json").write_text(
             json.dumps(evaluations, indent=2, ensure_ascii=False), encoding="utf-8"
         )
+        if db is not None and runs:
+            self._write_runtime_artifacts(exp_dir, db, runs)
         (exp_dir / "summary.md").write_text(_render_summary(experiment_id, git, metadata), encoding="utf-8")
         return exp_dir
+
+    @staticmethod
+    def _write_runtime_artifacts(exp_dir: Path, db: Database, runs: list[Run]) -> None:
+        """Export the complete Runtime graph for a Job experiment.
+
+        Reuse the canonical Runtime artifact writer so Job experiments have
+        the same Task/Run/Attempt replay contract as Phase A/B experiments.
+        """
+        task_repo = TaskRepository(db)
+        attempt_repo = AttemptRepository(db)
+        runtime_writer = ExperimentRecorder(db, base_dir=exp_dir)
+        tasks_dir = exp_dir / "tasks"
+        tasks_dir.mkdir(exist_ok=True)
+        for run in runs:
+            task = task_repo.get(run.task_id)
+            if task is None:
+                raise KeyError(f"runtime experiment references missing task {run.task_id}")
+            attempts = attempt_repo.list_for_run(run.id)
+            runtime_writer._write_task_dir(  # noqa: SLF001 — shared canonical exporter
+                tasks_dir / task.title,
+                TaskResult(
+                    task=task,
+                    run=run,
+                    attempts=attempts,
+                    expected="Job Runtime validation and recovery",
+                    passed=run.status is RunStatus.COMPLETED,
+                ),
+            )
 
     def next_id(self, area: str = "JOB") -> str:
         return next_experiment_id(self.base_dir, area)

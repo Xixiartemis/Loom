@@ -200,6 +200,9 @@ class ExperimentRecorder:
         (task_dir / "task.json").write_text(
             json.dumps(tr.task.model_dump(mode="json"), indent=2, ensure_ascii=False), encoding="utf-8"
         )
+        (task_dir / "run.json").write_text(
+            json.dumps(tr.run.model_dump(mode="json"), indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         (task_dir / "result.json").write_text(
             json.dumps({
                 "run_id": tr.run.id,

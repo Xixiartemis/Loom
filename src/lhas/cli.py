@@ -237,7 +237,8 @@ def jobbench(
         ground_truth_status=str(status),
         predictor=result.predictor,
         model=result.model,
-        provider="mock" if result.predictor == "rule" else "llm",
+        provider=result.provider or ("mock" if result.predictor == "rule" else "llm"),
+        model_config=result.model_config,
         harness_version=HARNESS_VERSION,
         context_policy_version="CP-2" if recovery else "CP-1",
         recovery="ON" if recovery else "OFF",
@@ -245,6 +246,8 @@ def jobbench(
         predictions=[p.model_dump() for p in result.predictions],
         evaluations=[e.model_dump() for e in result.evaluations],
         allow_dirty=allow_dirty,
+        db=runtime_db,
+        runs=result.runs,
     )
     print(f"experiment record: experiments/{exp_id}/")
     if runtime_db is not None:
