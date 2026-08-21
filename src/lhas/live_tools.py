@@ -11,6 +11,11 @@ from lhas.tools.protocol import ToolRequest, ToolResult, ToolResultStatus
 def _fail(kind: str, message: str) -> ToolResult:
     return ToolResult(status=ToolResultStatus.FAILURE, error_type=kind, error_message=message)
 
+def find_step_record(context: dict[str, Any], capability: str) -> dict[str, Any] | None:
+    for record in context.get("steps", {}).values():
+        if isinstance(record, dict) and record.get("capability") == capability: return record
+    return None
+
 class ResumeReaderTool:
     capability=CapabilitySpec(name="document.resume.read", description="Read PDF, DOCX, TXT or Markdown resume", input_schema={"path":"string"}, output_schema={"source_file":"string","text":"string","metadata":"object"})
     async def execute(self, request: ToolRequest) -> ToolResult:
@@ -24,9 +29,10 @@ class ResumeReaderTool:
                     raw=z.read("word/document.xml").decode("utf-8")
                 text=" ".join(re.sub(r"<[^>]+>", " ", raw).split())
             elif suffix == ".pdf":
-                raw=path.read_bytes()
-                text="\n".join(x.decode("latin1", "ignore") for x in re.findall(rb"\(([^()]*)\)", raw))
+                from pypdf import PdfReader
+                text="\n".join((page.extract_text() or "") for page in PdfReader(str(path)).pages)
                 if not text.strip(): return _fail("EMPTY_CONTENT", "PDF contains no extractable text")
+                if len(text.strip()) < 8: return _fail("EMPTY_CONTENT", "PDF text quality too low")
             else: return _fail("UNSUPPORTED_CONTENT", suffix)
             return ToolResult(status=ToolResultStatus.SUCCESS, output={"source_file":str(path),"text":text,"metadata":{"suffix":suffix,"size":path.stat().st_size}})
         except Exception as exc: return _fail("READ_ERROR", str(exc))
@@ -88,13 +94,21 @@ class WebFetchTool:
     def __init__(self,max_bytes=1_000_000,timeout=15): self.max_bytes,self.timeout=max_bytes,timeout
     async def execute(self, request):
         if not request.arguments.get("url"):
-            search=request.context.get("steps",{}).get("web.search",{}).get("output",{})
-            urls=[x.get("url") for x in (search.get("results",[]) if isinstance(search,dict) else []) if x.get("url")][:10]
+            search=(find_step_record(request.context,"web.search") or {}).get("output",{})
+            results=search.get("results",[]) if isinstance(search,dict) else []
+            if not results: return _fail("NO_SEARCH_RESULTS","web.search returned no results")
+            urls=[x.get("url") for x in results if isinstance(x,dict) and x.get("url")][:10]
+            if not urls: return _fail("NO_FETCHABLE_URLS","search results contained no valid URLs")
             fetched=[]
+            failures=[]
             for url in urls:
                 one=await self.execute(ToolRequest(**request.model_dump(exclude={"arguments"}),arguments={"url":url}))
-                if one.status == ToolResultStatus.SUCCESS: fetched.append(one.output)
-            return ToolResult(status=ToolResultStatus.SUCCESS,output={"results":fetched},usage={"fetched_count":len(fetched)})
+                meta=next((x for x in results if x.get("url")==url),{})
+                if one.status == ToolResultStatus.SUCCESS:
+                    fetched.append({**one.output,"search_title":meta.get("title",""),"search_snippet":meta.get("snippet",""),"search_score":meta.get("score")})
+                else: failures.append({"url":url,"error_type":one.error_type,"error_message":one.error_message})
+            if not fetched: return _fail("FETCH_ALL_FAILED",json.dumps({"failures":failures}))
+            return ToolResult(status=ToolResultStatus.SUCCESS,output={"results":fetched,"failures":failures},usage={"fetched_count":len(fetched),"failed_count":len(failures)})
         try: url=_safe_url(str(request.arguments.get("url","")))
         except ValueError as exc: return _fail(str(exc),str(exc))
         try:
@@ -115,26 +129,45 @@ class WebFetchTool:
 class JobParseTool:
     capability=CapabilitySpec(name="job.parse",description="Parse fetched job content")
     async def execute(self,request):
-        data=request.arguments.get("content", request.context.get("last_fetch",{}))
-        if not data:
-            step_values=list(request.context.get("steps",{}).values()); data=step_values[-1].get("output",{}) if step_values else {}
-        if isinstance(data,dict) and "results" in data: data=(data["results"] or [{}])[0]
-        text=data.get("text","") if isinstance(data,dict) else str(data)
-        return ToolResult(status=ToolResultStatus.SUCCESS,output={"company":"unknown","title":(text.splitlines()[0] if text else "unknown"),"description":text,"source_url":data.get("url","") if isinstance(data,dict) else ""})
+        data=request.arguments.get("content") or (find_step_record(request.context,"web.fetch") or {}).get("output",{})
+        rows=data.get("results",[]) if isinstance(data,dict) else []
+        jobs=[]
+        for item in rows:
+            text=item.get("text",""); lines=[x.strip() for x in text.splitlines() if x.strip()]
+            title=item.get("search_title") or item.get("title") or (lines[0] if lines else "unknown")
+            host=urllib.parse.urlparse(item.get("url","")).hostname or "unknown"
+            jobs.append({"job_id":hashlib.sha1(item.get("url",host).encode()).hexdigest()[:12],"company":host,"title":title,"location":"unknown","source_url":item.get("url",""),"jd_text":text,"content_hash":item.get("content_hash",""),"status":"unknown","requirements":[],"responsibilities":[],"search_snippet":item.get("search_snippet",""),"page_title":item.get("title","")})
+        from lhas.job.live_pipeline import deduplicate_jobs, expiration_status
+        jobs, duplicate_count=deduplicate_jobs(jobs)
+        for job in jobs: job["status"]=expiration_status(job)
+        return ToolResult(status=ToolResultStatus.SUCCESS,output={"jobs":jobs,"duplicate_count":duplicate_count,"active_count":sum(j["status"]=="active" for j in jobs),"expired_count":sum(j["status"]=="expired" for j in jobs),"unknown_expiration_count":sum(j["status"]=="unknown" for j in jobs)})
 
 class JobMatchTool:
     capability=CapabilitySpec(name="job.match",description="Match parsed job to resume")
-    async def execute(self,request): return ToolResult(status=ToolResultStatus.SUCCESS,output={"classification":"unknown","match_score":0,"fit_reasons":[],"risks":[]})
+    async def execute(self,request):
+        resume=(find_step_record(request.context,"document.resume.read") or {}).get("output",{}); resume_text=str(resume.get("text","")).lower()
+        parsed=(find_step_record(request.context,"job.parse") or {}).get("output",{}); jobs=parsed.get("jobs",[]) if isinstance(parsed,dict) else []
+        tokens={x for x in re.findall(r"[a-zA-Z][a-zA-Z+#.-]{2,}",resume_text)}; matched=[]
+        for job in jobs:
+            words={x for x in re.findall(r"[a-zA-Z][a-zA-Z+#.-]{2,}",job.get("jd_text","").lower())}; overlap=sorted(tokens & words); score=round(100*len(overlap)/max(1,len(words)),2)
+            matched.append({**job,"match_score":score,"classification":"strong" if score>=20 else "weak","fit_reasons":[f"shared skill/text: {x}" for x in overlap[:5]],"risks":[] if overlap else ["no lexical evidence"],"evidence":overlap[:10],"resume_evidence":overlap[:10],"job_evidence":overlap[:10]})
+        return ToolResult(status=ToolResultStatus.SUCCESS,output={"jobs":matched})
 
 class JobRankTool:
     capability=CapabilitySpec(name="job.rank",description="Rank job candidates")
-    async def execute(self,request): return ToolResult(status=ToolResultStatus.SUCCESS,output=request.arguments.get("jobs",request.context.get("steps",{})))
+    async def execute(self,request):
+        matched=(find_step_record(request.context,"job.match") or {}).get("output",{}); jobs=matched.get("jobs",[]) if isinstance(matched,dict) else []; active=[j for j in jobs if j.get("status")!="expired"]
+        active.sort(key=lambda x:x.get("match_score",0),reverse=True)
+        return ToolResult(status=ToolResultStatus.SUCCESS,output={"shortlist":active[:10],"total_candidates":len(jobs),"duplicate_count":(find_step_record(request.context,"job.parse") or {}).get("output",{}).get("duplicate_count",0),"expired_filtered":len(jobs)-len(active)})
 
 class ShortlistArtifactTool:
     capability=CapabilitySpec(name="artifact.write",description="Write shortlist artifacts")
     async def execute(self,request):
-        root=Path(str(request.arguments.get("output_dir","artifacts")))/request.task_id; root.mkdir(parents=True,exist_ok=True)
-        data=request.arguments.get("shortlist",request.context.get("steps",{})); (root/"shortlist.json").write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding="utf-8"); (root/"shortlist.md").write_text("# Shortlist\n\n"+json.dumps(data,ensure_ascii=False,indent=2),encoding="utf-8")
+        goal_id=request.context.get("runtime",{}).get("goal_id",request.task_id); root=Path(str(request.arguments.get("output_dir","artifacts")))/goal_id; root.mkdir(parents=True,exist_ok=True)
+        data=(find_step_record(request.context,"job.rank") or {}).get("output",{}); (root/"shortlist.json").write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding="utf-8");
+        lines=["# Shortlist",""]
+        for j in data.get("shortlist",[]): lines += [f"## {j.get('company','unknown')} — {j.get('title','unknown')}",f"- Location: {j.get('location','unknown')}",f"- Status: {j.get('status','unknown')}",f"- Match Score: {j.get('match_score',0)}",f"- Classification: {j.get('classification','unknown')}",f"- Source URL: {j.get('source_url','')}",f"- Fit Reasons: {', '.join(j.get('fit_reasons',[]))}",f"- Risks: {', '.join(j.get('risks',[]))}",f"- Evidence: {', '.join(j.get('evidence',[]))}",""]
+        (root/"shortlist.md").write_text("\n".join(lines),encoding="utf-8")
         return ToolResult(status=ToolResultStatus.SUCCESS,output={"artifact_path":str(root)})
 
 def build_live_registry():

@@ -6,6 +6,12 @@ import urllib.error
 from lhas.tools.protocol import ToolRequest, ToolResult, ToolResultStatus
 from lhas.job.live_pipeline import deduplicate_jobs, expiration_status, shortlist_record
 from lhas import HARNESS_VERSION
+from lhas.planning.models import Goal
+from lhas.planning.planner import DeterministicPlanner
+from lhas.planning.service import PlanExecutionService
+from lhas.tools.registry import ToolRegistry
+from lhas.domain.models import Project
+from lhas.persistence.repositories import ProjectRepository
 
 def req(cap,args): return ToolRequest(tool_call_id="c",task_id="t",run_id="r",attempt_id="a",capability=cap,arguments=args)
 
@@ -71,3 +77,32 @@ def test_dedup_expiration_and_evidence():
 
 def test_d2_harness_version():
     assert HARNESS_VERSION == "HV-0.5"
+
+def test_semantic_pipeline_e2e(db,tmp_path,monkeypatch):
+    resume=tmp_path/"resume.txt"; resume.write_text("React TypeScript Python Agent",encoding="utf-8")
+    class P(SearchProvider):
+        async def search(self,q,n): return [{"title":"React Agent","url":"https://jobs.example/a","snippet":"React Python","source":"tavily","score":.9},{"title":"TypeScript Agent","url":"https://jobs.example/b","snippet":"TypeScript Agent","source":"tavily","score":.8}]
+    class Resp:
+        def __init__(self,url): self.url=url; self.status=200; self.headers={"Content-Type":"text/html"}
+        def __enter__(self): return self
+        def __exit__(self,*a): pass
+        def read(self,n=-1): return ("<html><title>"+self.url+" Role</title><body>React TypeScript Python Agent engineer</body></html>").encode()
+    monkeypatch.setattr(live_tools.urllib.request,"urlopen",lambda req,timeout=15: Resp(req.full_url))
+    from lhas.live_tools import ResumeReaderTool, WebSearchTool, WebFetchTool, JobParseTool, JobMatchTool, JobRankTool, ShortlistArtifactTool
+    registry=ToolRegistry()
+    for t in (ResumeReaderTool(),WebSearchTool(P()),WebFetchTool(),JobParseTool(),JobMatchTool(),JobRankTool(),ShortlistArtifactTool()): registry.register(t)
+    project=Project(name="e2e-d2"); ProjectRepository(db).create(project)
+    names=["document.resume.read","web.search","web.fetch","job.parse","job.match","job.rank","artifact.write"]
+    goal=Goal(project_id=project.id,objective="find roles",allowed_capabilities=names,metadata={"plan_steps":names,"resume_path":str(resume),"query":"AI agent"})
+    plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),registry).execute_goal(goal,context={"live":True}))
+    assert plan.status.value == "COMPLETED"
+    fetch=next(s for s in plan.steps if s.capability=="web.fetch"); assert len(fetch.output["results"])>=2
+    parsed=next(s for s in plan.steps if s.capability=="job.parse"); assert len(parsed.output["jobs"])==2
+    matched=next(s for s in plan.steps if s.capability=="job.match"); assert any(x["match_score"]>0 for x in matched.output["jobs"]) and all(x["fit_reasons"] and x["evidence"] for x in matched.output["jobs"])
+    ranked=next(s for s in plan.steps if s.capability=="job.rank"); assert ranked.output["shortlist"][0]["match_score"]>=ranked.output["shortlist"][1]["match_score"]
+    artifact=next(s for s in plan.steps if s.capability=="artifact.write").output["artifact_path"]
+    data=json.loads((Path(artifact)/"shortlist.json").read_text(encoding="utf-8")); assert "steps" not in data and data["shortlist"][0]["source_url"]
+
+def test_fetch_false_green_guards():
+    empty=req("web.fetch",{}); empty.context={"steps":{"x":{"capability":"web.search","output":{"results":[]}}}}
+    assert asyncio.run(WebFetchTool().execute(empty)).error_type == "NO_SEARCH_RESULTS"
