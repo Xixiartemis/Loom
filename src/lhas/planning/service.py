@@ -9,6 +9,7 @@ from lhas.persistence.repositories import TaskRepository, RunRepository, Attempt
 from lhas.persistence.planning_repositories import GoalRepository, PlanRepository
 from lhas.orchestrator_v2 import RecoveringOrchestrator
 from lhas.planning.models import Goal, Plan, PlanStatus, PlanStepStatus
+from lhas.planning.scheduler import TaskGraphScheduler, build_step_dependency_context
 from lhas.planning.planner import Planner
 from lhas.tools.registry import ToolRegistry
 from lhas.tools.protocol import ToolRequest, ToolResultStatus
@@ -54,6 +55,8 @@ class PlanExecutionService:
             plans.create(plan)
             self._emit(EventType.PLAN_CREATED, {"plan": plan.model_dump(mode="json")})
         if plan.mode.value != "LINEAR":
+            if plan.mode.value == "SIMPLE_DEPENDENCY":
+                return await self._execute_dependency_plan(goal, plan, context=context or {}, experiment_id=experiment_id, approved_step_ids=approved_step_ids or set())
             raise NotImplementedError(f"unsupported plan mode: {plan.mode.value}")
         self._emit(EventType.PLAN_STARTED, {"plan_id": plan.id})
         task_repo = TaskRepository(self.db)
@@ -93,3 +96,44 @@ class PlanExecutionService:
     async def resume_after_approval(self, plan_id: str, goal: Goal, step_id: str, *, context: dict[str, Any] | None = None, experiment_id: str | None = None) -> Plan:
         """Resume by explicitly granting one previously gated capability."""
         return await self.execute_goal(goal, context=context, experiment_id=experiment_id, approved_step_ids={step_id}, resume_plan_id=plan_id)
+
+    async def _execute_dependency_plan(self, goal, plan, *, context, experiment_id, approved_step_ids):
+        plans=PlanRepository(self.db); tasks=TaskRepository(self.db); scheduler=TaskGraphScheduler()
+        execution_context={"runtime":{**context,"goal_id":goal.id},"steps":{}}
+        for s in plan.steps:
+            if s.status == PlanStepStatus.COMPLETED:
+                execution_context["steps"][s.id]=s.execution_context.get("steps",{}).get(s.id,{"capability":s.capability,"output":s.output,"artifacts":{},"usage":{}})
+        while True:
+            schedule=scheduler.calculate(plan)
+            for step in schedule.blocked_steps:
+                step.status=PlanStepStatus.BLOCKED
+                blockers=[d for d in step.depends_on if next(x for x in plan.steps if x.id==d).status in {PlanStepStatus.FAILED,PlanStepStatus.BLOCKED}]
+                self._emit(EventType.PLAN_STEP_BLOCKED,{"plan_id":plan.id,"step_id":step.id,"blocked_by_step_ids":blockers})
+            if schedule.blocked_steps: plans.update(plan)
+            for step in schedule.ready_steps:
+                self._emit(EventType.PLAN_STEP_READY,{"plan_id":plan.id,"step_id":step.id})
+                spec=self.registry.resolve(step.capability).capability
+                if step.id not in approved_step_ids and (spec.requires_human_approval or (goal.requires_human_approval and spec.side_effect)):
+                    step.status=PlanStepStatus.WAITING_FOR_HUMAN_APPROVAL; plan.status=PlanStatus.WAITING_FOR_HUMAN_APPROVAL
+                    self._emit(EventType.HUMAN_APPROVAL_REQUIRED,{"plan_id":plan.id,"step_id":step.id,"capability":step.capability}); plans.update(plan); continue
+                step.status=PlanStepStatus.RUNNING; step.execution_context=build_step_dependency_context(plan,step,execution_context)
+                task=Task(project_id=goal.project_id,title=step.title,objective=step.objective,constraints=goal.constraints,acceptance_criteria=step.success_criteria,max_attempts=2); tasks.create(task); step.task_id=task.id
+                self._emit(EventType.PLAN_STEP_STARTED,{"plan_id":plan.id,"step_id":step.id,"task_id":task.id})
+                orch=RecoveringOrchestrator(self.db,executor_factory=lambda s=step: _ToolExecutor(self.registry,s,self.db,step.execution_context),executor_type="ToolRegistryExecutor",provider="tool-registry",model="deterministic",harness_version=HARNESS_VERSION,dataset_version="PLANNING-V0.1",experiment_id=experiment_id)
+                run=await orch.execute_task(task.id)
+                if run.status.value != "COMPLETED":
+                    step.status=PlanStepStatus.FAILED; self._emit(EventType.PLAN_STEP_FAILED,{"plan_id":plan.id,"step_id":step.id,"run_id":run.id}); plans.update(plan); continue
+                import json
+                payload=json.loads(run.result or "{}"); step.output=payload.get("output")
+                if isinstance(step.output,str):
+                    try: step.output=json.loads(step.output)
+                    except json.JSONDecodeError: pass
+                attempts=AttemptRepository(self.db).list_for_run(run.id); raw=json.loads(attempts[-1].executor_result or "{}") if attempts and attempts[-1].executor_result else {}
+                rec={"capability":step.capability,"output":step.output,"artifacts":raw.get("artifacts",{}),"usage":raw.get("usage",{})}; execution_context["steps"][step.id]=rec; step.execution_context={"runtime":execution_context["runtime"],"steps":dict(execution_context["steps"])}; step.status=PlanStepStatus.COMPLETED; self._emit(EventType.PLAN_STEP_COMPLETED,{"plan_id":plan.id,"step_id":step.id,"run_id":run.id}); plans.update(plan)
+            schedule=scheduler.calculate(plan)
+            if schedule.blocked_steps:
+                continue
+            if any(s.status==PlanStepStatus.WAITING_FOR_HUMAN_APPROVAL for s in plan.steps): plan.status=PlanStatus.WAITING_FOR_HUMAN_APPROVAL; plans.update(plan); return plan
+            if all(s.status==PlanStepStatus.COMPLETED for s in plan.steps): plan.status=PlanStatus.COMPLETED; plans.update(plan); self._emit(EventType.PLAN_COMPLETED,{"plan_id":plan.id}); return plan
+            if not schedule.ready_steps and not schedule.pending_steps:
+                plan.status=PlanStatus.FAILED; plans.update(plan); self._emit(EventType.PLAN_FAILED,{"plan_id":plan.id}); return plan
