@@ -137,6 +137,8 @@ class PlanExecutionService:
             schedule=scheduler.calculate(plan)
             if schedule.blocked_steps:
                 continue
+            if schedule.ready_steps:
+                continue
             if any(s.status==PlanStepStatus.WAITING_FOR_HUMAN_APPROVAL for s in plan.steps): plan.status=PlanStatus.WAITING_FOR_HUMAN_APPROVAL; plans.update(plan); return plan
             if all(s.status==PlanStepStatus.COMPLETED for s in plan.steps): plan.status=PlanStatus.COMPLETED; plans.update(plan); self._emit(EventType.PLAN_COMPLETED,{"plan_id":plan.id}); return plan
             if not schedule.ready_steps and not schedule.pending_steps:

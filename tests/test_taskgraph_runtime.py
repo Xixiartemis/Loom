@@ -68,3 +68,18 @@ def test_dependency_context_isolation():
 def test_graph_events(db):
     project=Project(name="graph-events"); ProjectRepository(db).create(project); goal=Goal(project_id=project.id,objective="x"); step=PlanStep(id="a",title="a",objective="a",capability="a"); plan=Plan(goal_id=goal.id,mode=PlanMode.SIMPLE_DEPENDENCY,steps=[step]); reg=ToolRegistry(); reg.register(FakeTool(CapabilitySpec(name="a",description="a")))
     asyncio.run(PlanExecutionService(db,FixedPlanner(plan),reg).execute_goal(goal)); types=[e.event_type for e in EventStore(db).list_all()]; assert EventType.PLAN_STEP_READY in types
+
+def test_gated_branch_does_not_pause_independent_descendant(db):
+    project=Project(name="approval-descendant"); ProjectRepository(db).create(project); goal=Goal(project_id=project.id,objective="x")
+    steps=[PlanStep(id="a",title="a",objective="a",capability="a"),PlanStep(id="b",title="b",objective="b",capability="b",depends_on=["a"]),PlanStep(id="c",title="c",objective="c",capability="c",depends_on=["a"]),PlanStep(id="d",title="d",objective="d",capability="d",depends_on=["b"]),PlanStep(id="e",title="e",objective="e",capability="e",depends_on=["c"])]
+    plan=Plan(goal_id=goal.id,mode=PlanMode.SIMPLE_DEPENDENCY,steps=steps); counts={x:0 for x in "abcde"}
+    def tool(name):
+        def run(req): counts[name]+=1; return name
+        return run
+    reg=ToolRegistry()
+    for name,gated in (("a",False),("b",True),("c",False),("d",False),("e",False)):
+        reg.register(FakeTool(CapabilitySpec(name=name,description=name,side_effect=gated,requires_human_approval=gated),tool(name)))
+    svc=PlanExecutionService(db,FixedPlanner(plan),reg); first=asyncio.run(svc.execute_goal(goal)); assert first.status==PlanStatus.WAITING_FOR_HUMAN_APPROVAL and counts=={"a":1,"b":0,"c":1,"d":0,"e":1}
+    events=EventStore(db).list_all(); assert sum(e.event_type==EventType.HUMAN_APPROVAL_REQUIRED for e in events)==1
+    assert sum(e.event_type==EventType.PLAN_STEP_READY and e.payload.get("step_id")=="b" for e in events)==1
+    resumed=asyncio.run(svc.resume_after_approval(first.id,goal,"b")); assert resumed.id==first.id and resumed.status==PlanStatus.COMPLETED and counts=={"a":1,"b":1,"c":1,"d":1,"e":1}
