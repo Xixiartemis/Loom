@@ -68,3 +68,4 @@ class AgentExecutor(Protocol):
 - budget
 
 更换模型或 Provider 不应修改 LHAS Core。
+Planner tools are invoked through ToolRequest/ToolResult and then enter the existing Task/Run/Attempt validator and recovery runtime. Tool implementations remain offline and provider-neutral in this phase.

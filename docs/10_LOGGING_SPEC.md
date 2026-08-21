@@ -115,3 +115,6 @@ Job Benchmark 可额外保存：
 - Secret / Token 不写入日志
 - 用户隐私字段需脱敏
 - 原始模型输出可保存，但不得成为唯一 Eval 证据
+## Phase D planner/tool events
+
+`GOAL_CREATED`, `PLAN_CREATED`, `PLAN_STARTED`, `PLAN_STEP_STARTED`, `PLAN_STEP_COMPLETED`, `PLAN_STEP_FAILED`, `PLAN_COMPLETED`, `PLAN_FAILED`, and `TOOL_CALL_STARTED/COMPLETED/FAILED` are append-only events. Tool events include the complete request and result (or error), including usage, so the call can be replayed without a provider.

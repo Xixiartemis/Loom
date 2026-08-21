@@ -111,3 +111,4 @@ Project
 - ground_truth_version
 
 任何一个发生改变，正式实验必须生成新的 Dataset / Experiment 标识。
+Phase D adds provider-neutral Goal, Plan, PlanStep and Capability entities. Plan persistence keeps declared inputs separate from runtime execution context and records step output/artifacts/usage.

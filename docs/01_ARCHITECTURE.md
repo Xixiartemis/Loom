@@ -79,3 +79,6 @@ Orchestrator
 ```
 
 V0 只实现必要路径，不提前实现未来功能。
+## Phase D planning/tool execution
+
+The domain-neutral flow is `Goal → Plan → PlanStep → Capability → Tool → Task → Run → Attempt → Validation → Failure → Recovery`. A linear plan carries `Step Output → Execution Context → Next Step`; approval follows `WAITING → GRANTED → Resume SAME PLAN`.
