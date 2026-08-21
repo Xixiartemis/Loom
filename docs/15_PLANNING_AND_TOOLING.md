@@ -6,4 +6,6 @@ Each completed step persists its output and passes it forward as `Step Output ->
 
 Phase D2 adds explicit-live, provider-neutral `document.resume.read`, `web.search`, and bounded `web.fetch` adapters plus job parsing/ranking/artifact adapters. No network call occurs without `--live`; SSRF, content-type, size, timeout, and HTTP failure guards are enforced. This changes Tool Policy, so the harness is HV-0.5.
 
+Phase E1 adds deterministic serial `SIMPLE_DEPENDENCY` TaskGraph scheduling with READY/BLOCKED states and dependency-closure context isolation. No dynamic replan or parallel execution is included. This orchestration policy is HV-0.6.
+
 Capabilities may require human approval. Such steps become `WAITING_FOR_HUMAN_APPROVAL` and no tool call is made. Fake tools are offline test doubles; no web, browser, shell, MCP, real LLM planner, DAG concurrency, or multi-agent behavior is part of this phase.
