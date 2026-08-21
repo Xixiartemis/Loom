@@ -195,13 +195,7 @@ class Orchestrator:
             run_id=run.id,
             attempt_id=attempt.id,
             attempt_number=attempt.attempt_number,
-            task={
-                "id": task.id,
-                "title": task.title,
-                "objective": task.objective,
-                "constraints": task.constraints,
-                "acceptance_criteria": task.acceptance_criteria,
-            },
+            task=self._executor_task_payload(task),
             context=self._executor_context(task, attempt),
             metadata={
                 "executor_type": self.executor_type,
@@ -343,6 +337,21 @@ class Orchestrator:
             "constraints": task.constraints,
             "acceptance_criteria": task.acceptance_criteria,
             "attempt_number": attempt.attempt_number,
+        }
+
+    def _executor_task_payload(self, task: Task) -> dict[str, Any]:
+        """Return the task snapshot exposed to an executor.
+
+        Domain-neutral Core keeps the default payload small; benchmark
+        adapters may extend it with task-local source data without making the
+        Core import a concrete provider.
+        """
+        return {
+            "id": task.id,
+            "title": task.title,
+            "objective": task.objective,
+            "constraints": task.constraints,
+            "acceptance_criteria": task.acceptance_criteria,
         }
 
     def _create_run(self, task: Task) -> Run:

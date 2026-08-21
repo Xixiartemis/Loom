@@ -126,14 +126,20 @@ class MetricsCalculator:
         detected = {job.job_id for job in self.dataset.ordered_jobs if validator.check(job) == "EXPIRED"}
         return len(gt_expired & detected) / len(gt_expired)
 
-    @staticmethod
-    def _ndcg_at_10(ranked: list[MatchPrediction]) -> float:
+    def _ndcg_at_10(self, ranked: list[MatchPrediction]) -> float:
         def dcg(ordered: list[MatchPrediction]) -> float:
-            return sum(FIT_GAIN.get(p.fit, 0.0) / math.log2(i + 2) for i, p in enumerate(ordered[:10]))
+            return sum(
+                FIT_GAIN.get(self.dataset.labels[p.job_id].expected_fit, 0.0) / math.log2(i + 2)
+                for i, p in enumerate(ordered[:10])
+            )
 
         if not ranked:
             return 0.0
-        ideal = sorted(ranked, key=lambda p: FIT_GAIN.get(p.fit, 0.0), reverse=True)
+        ideal = sorted(
+            ranked,
+            key=lambda p: FIT_GAIN.get(self.dataset.labels[p.job_id].expected_fit, 0.0),
+            reverse=True,
+        )
         idcg = dcg(ideal)
         return dcg(ranked) / idcg if idcg else 0.0
 

@@ -47,7 +47,6 @@ class ValidationResult(BaseModel):
     stderr: Optional[str] = None
     duration_ms: int = 0
 
-
 class Validator(Protocol):
     async def validate(
         self, *, task: Task, attempt: Attempt, result: ExecutionResult

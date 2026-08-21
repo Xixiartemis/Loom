@@ -1,8 +1,8 @@
 """GroundTruthEvaluator — 预测与人工 Ground Truth 的逐项比对(docs/11, docs/09)。
 
 不修改任何预测;只输出比对结果。证据 grounded 判定:
-预测证据项能被 JD requirements / 候选人技能 / GT positive_evidence 中的
-任一事实(子串)支撑 → 有依据;否则计入 hallucination。
+预测证据项能被原始 JD requirements/responsibilities 或候选人事实支撑；
+Ground Truth 只用于 Evidence Alignment，不参与 Grounding。
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class GroundTruthEvaluator:
 
         evidence_hit = self._hit_ratio(pred.evidence, gt.positive_evidence)
         evidence_coverage = self._hit_ratio(gt.positive_evidence, pred.evidence)
-        grounded = [e for e in pred.evidence if self._grounded(e, job, gt)]
+        grounded = [e for e in pred.evidence if self._grounded(e, job)]
         grounded_ratio = len(grounded) / len(pred.evidence) if pred.evidence else 1.0
 
         return EvaluationResult(
@@ -60,8 +60,14 @@ class GroundTruthEvaluator:
         hits = sum(1 for e in items if any(ref in e or e in ref for ref in reference))
         return hits / len(items)
 
-    def _grounded(self, evidence: str, job: JobRecord, gt: GroundTruthLabel) -> bool:
+    def _grounded(self, evidence: str, job: JobRecord) -> bool:
         corpus = list(job.requirements) + list(job.responsibilities)
         corpus += self.dataset.profile.skill_flat
-        corpus += gt.positive_evidence
+        corpus += [
+            self.dataset.profile.name,
+            self.dataset.profile.education.degree,
+            self.dataset.profile.education.major,
+            *(p.name for p in self.dataset.profile.projects),
+            *(h for e in self.dataset.profile.experience for h in e.highlights),
+        ]
         return any(evidence in e or e in evidence for e in corpus)

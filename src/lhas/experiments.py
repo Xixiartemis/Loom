@@ -35,6 +35,12 @@ from lhas.domain.enums import EventType
 from lhas.domain.models import Attempt, Event, Run, Task, json_loads
 from lhas.persistence.database import Database
 from lhas.persistence.event_store import EventStore
+from lhas.persistence.phaseb_repos import (
+    ContextSnapshotRepository,
+    FailureReportRepository,
+    RecoveryActionRepository,
+    ValidationResultRepository,
+)
 from lhas.persistence.repositories import AttemptRepository, RunRepository, TaskRepository
 
 
@@ -85,17 +91,21 @@ def git_head_info() -> dict[str, Any]:
 
 
 def next_experiment_id(base_dir: Path, area: str = "RUNTIME") -> str:
-    """EXP-YYYYMMDD-<AREA>-<NNN> with NNN = max existing + 1."""
+    """EXP-YYYYMMDD-<AREA>-<NNN> with area sequence = max existing + 1.
+
+    The date is a creation-date prefix, not a sequence namespace; otherwise a
+    new day could silently reuse ``-001`` for an existing experiment area.
+    """
     today = datetime.now(timezone.utc).strftime("%Y%m%d")
-    prefix = f"EXP-{today}-{area}-"
+    prefix = f"EXP-"
     existing: list[int] = []
     if base_dir.exists():
         for p in base_dir.iterdir():
-            m = re.fullmatch(re.escape(prefix) + r"(\d{3})", p.name)
+            m = re.fullmatch(re.escape(prefix) + r"\d{8}-" + re.escape(area) + r"-(\d{3})", p.name)
             if m:
                 existing.append(int(m.group(1)))
     n = (max(existing) + 1) if existing else 1
-    return f"{prefix}{n:03d}"
+    return f"EXP-{today}-{area}-{n:03d}"
 
 
 class ExperimentRecorder:
@@ -106,6 +116,10 @@ class ExperimentRecorder:
         self._task_repo = TaskRepository(db)
         self._run_repo = RunRepository(db)
         self._attempt_repo = AttemptRepository(db)
+        self._snapshot_repo = ContextSnapshotRepository(db)
+        self._validation_repo = ValidationResultRepository(db)
+        self._failure_repo = FailureReportRepository(db)
+        self._action_repo = RecoveryActionRepository(db)
 
     def record(
         self,
@@ -121,14 +135,19 @@ class ExperimentRecorder:
         timeout_seconds: float,
         max_attempts: int,
         git: Optional[dict[str, Any]] = None,
+        allow_dirty: bool = False,
     ) -> Path:
         exp_dir = self.base_dir / experiment_id
         if exp_dir.exists():
             raise FileExistsError(f"Experiment directory already exists: {exp_dir} — historical experiments are never overwritten")
+        git = git or git_head_info()
+        if git.get("dirty_workspace") and not allow_dirty:
+            raise ValueError(
+                "formal experiments require a clean git workspace; "
+                "pass allow_dirty=True only for development runs"
+            )
         (exp_dir / "config").mkdir(parents=True)
         (exp_dir / "tasks").mkdir()
-
-        git = git or git_head_info()
         metadata = {
             "experiment_id": experiment_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -181,6 +200,9 @@ class ExperimentRecorder:
         (task_dir / "task.json").write_text(
             json.dumps(tr.task.model_dump(mode="json"), indent=2, ensure_ascii=False), encoding="utf-8"
         )
+        (task_dir / "run.json").write_text(
+            json.dumps(tr.run.model_dump(mode="json"), indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         (task_dir / "result.json").write_text(
             json.dumps({
                 "run_id": tr.run.id,
@@ -204,12 +226,46 @@ class ExperimentRecorder:
         for attempt in tr.attempts:
             a_dir = attempts_dir / f"attempt-{attempt.attempt_number:02d}"
             a_dir.mkdir(exist_ok=True)
+            snapshot = (
+                self._snapshot_repo.get(attempt.context_snapshot_id)
+                if attempt.context_snapshot_id else None
+            )
+            (a_dir / "context.json").write_text(
+                json.dumps(snapshot.model_dump(mode="json") if snapshot else None,
+                           indent=2, ensure_ascii=False), encoding="utf-8"
+            )
             (a_dir / "context.md").write_text(
-                self._render_context(attempt), encoding="utf-8"
+                snapshot.raw_text if snapshot else self._render_context(attempt), encoding="utf-8"
+            )
+            validations = self._validation_repo.list_for_attempt(attempt.id)
+            failures = self._failure_repo.list_for_attempt(attempt.id)
+            actions = self._action_repo.list_for_attempt(attempt.id)
+            (a_dir / "validation.json").write_text(
+                json.dumps([v.model_dump(mode="json") for v in validations], indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            (a_dir / "failure.json").write_text(
+                json.dumps([f.model_dump(mode="json") for f in failures], indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            (a_dir / "recovery.json").write_text(
+                json.dumps([a.model_dump(mode="json") for a in actions], indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            executor_result = json_loads(attempt.executor_result) if attempt.executor_result else None
+            (a_dir / "executor-result.json").write_text(
+                json.dumps(executor_result, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
+            (a_dir / "usage.json").write_text(
+                json.dumps(attempt.usage, indent=2, ensure_ascii=False), encoding="utf-8"
             )
             (a_dir / "stdout.log").write_text(
                 (attempt.output or "") + "\n", encoding="utf-8"
             )
+            stderr = ""
+            if executor_result:
+                stderr = executor_result.get("error_message") or ""
+            (a_dir / "stderr.log").write_text(stderr + "\n", encoding="utf-8")
 
     @staticmethod
     def _event_to_dict(ev: Event) -> dict[str, Any]:

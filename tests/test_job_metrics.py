@@ -40,7 +40,10 @@ def test_perfect_predictions_score_1_0(ds):
     assert metrics.recall_at_10 == pytest.approx(0.5)
     assert metrics.ranking_quality_ndcg10 == 1.0
     assert metrics.evidence_accuracy == 1.0
-    assert metrics.hallucination_rate == 0.0
+    # Grounding deliberately excludes GT annotations; some concise labels are
+    # not literal substrings of the raw JD/profile and are therefore not
+    # allowed to make hallucination look better.
+    assert metrics.hallucination_rate == pytest.approx(1 / 3, abs=0.0001)
     assert metrics.duplicate_detection_rate == 1.0
     assert metrics.expired_job_detection_rate == 1.0
 
@@ -73,6 +76,21 @@ def test_wrong_predictions_are_penalized(ds):
     assert metrics.hallucination_rate == 1.0
 
 
+def test_ndcg_uses_ground_truth_gain_not_predicted_fit(ds):
+    predictions = []
+    for jid, gt in ds.labels.items():
+        predictions.append(MatchPrediction(
+            job_id=jid,
+            fit=gt.expected_fit,
+            score={"HIGH": 10.0, "MEDIUM": 20.0, "LOW": 30.0}[gt.expected_fit],
+            evidence=[], risks=[], hard_constraints_pass=gt.hard_constraints_pass,
+            should_apply=gt.should_apply, source="adversarial-ranking",
+        ))
+    report = MetricsCalculator(ds).compute(predictions)
+    assert report.fit_classification_accuracy == 1.0
+    assert report.ranking_quality_ndcg10 < 1.0
+
+
 def test_evaluator_detects_hallucination(ds):
     evaluator = GroundTruthEvaluator(ds)
     pred = MatchPrediction(
@@ -84,6 +102,19 @@ def test_evaluator_detects_hallucination(ds):
     assert result.hallucination is True
     assert result.grounded_ratio == 0.5
     assert result.evidence_hit == 0.5
+
+
+def test_grounding_does_not_use_ground_truth_evidence(ds):
+    evaluator = GroundTruthEvaluator(ds)
+    gt_only = ds.labels["JD-001"].positive_evidence[-1]
+    pred = MatchPrediction(
+        job_id="JD-001", fit="HIGH", score=90.0,
+        evidence=[gt_only], risks=[], hard_constraints_pass=True, should_apply=True,
+        source="test",
+    )
+    result = evaluator.evaluate(pred)
+    assert result.hallucination is True
+    assert result.grounded_ratio == 0.0
 
 
 def test_missing_predictions_raise(ds):

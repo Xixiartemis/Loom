@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import os
+import asyncio
+import time
 import urllib.error
 import urllib.request
 from typing import Any, Optional
@@ -35,6 +37,7 @@ class LLMClient:
         model: str,
         timeout: float = 60.0,
         temperature: float = 0.0,
+        provider: str = "openai-compatible",
     ):
         self.base_url = base_url.rstrip("/")
         if not self.base_url.endswith("/chat/completions"):
@@ -43,6 +46,9 @@ class LLMClient:
         self.model = model
         self.timeout = timeout
         self.temperature = temperature
+        self.provider = provider
+        self.last_usage: dict[str, Any] = {}
+        self.last_latency_ms: int = 0
 
     def chat_json(self, messages: list[dict[str, str]]) -> dict[str, Any]:
         payload = {
@@ -60,6 +66,7 @@ class LLMClient:
             },
             method="POST",
         )
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
@@ -67,6 +74,14 @@ class LLMClient:
             raise RuntimeError(f"LLM API HTTP {exc.code}: {exc.read().decode('utf-8', 'ignore')[:300]}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"LLM API unreachable: {exc.reason}") from exc
+        self.last_latency_ms = int((time.monotonic() - started) * 1000)
+        raw_usage = body.get("usage") or {}
+        self.last_usage = {
+            "input_tokens": raw_usage.get("prompt_tokens", raw_usage.get("input_tokens")),
+            "output_tokens": raw_usage.get("completion_tokens", raw_usage.get("output_tokens")),
+            "total_tokens": raw_usage.get("total_tokens"),
+            "latency_ms": self.last_latency_ms,
+        }
         try:
             content = body["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as exc:
@@ -93,6 +108,7 @@ def llm_config_from_env() -> dict[str, Any]:
             "or use --predictor rule (deterministic baseline, no tokens)."
         )
     return {
+        "provider": os.environ.get("LHAS_JOB_LLM_PROVIDER", "openai-compatible"),
         "base_url": os.environ.get("LHAS_JOB_LLM_BASE_URL", "https://api.deepseek.com/v1"),
         "api_key": api_key,
         "model": os.environ.get("LHAS_JOB_LLM_MODEL", "deepseek-chat"),
@@ -128,6 +144,9 @@ _MATCH_PROMPT = """你是岗位匹配分析器。基于给定的 Job Description
 
 === Career Goal ===
 {goal_json}
+
+=== Recovery Context (if present) ===
+{recovery_context}
 """
 
 
@@ -142,15 +161,29 @@ class GeneralAgentExecutor:
     def __init__(self, client: Optional[LLMClient] = None):
         self.client = client
 
-    def predict(self, job: JobRecord, profile: CandidateProfile, goal: CareerGoal) -> MatchPrediction:
+    def predict(
+        self,
+        job: JobRecord,
+        profile: CandidateProfile,
+        goal: CareerGoal,
+        context: Optional[dict[str, Any]] = None,
+    ) -> MatchPrediction:
         if self.client is None:
             raise RuntimeError("no LLM client configured — set LHAS_JOB_LLM_API_KEY or use --predictor rule")
+        context = context or {}
+        recovery_sections = [
+            context.get("previous_attempts"),
+            context.get("failure"),
+            context.get("recovery_guidance"),
+        ]
+        recovery_context = "\n\n".join(str(s) for s in recovery_sections if s) or "(none; first attempt)"
         messages = [
             {"role": "system", "content": "你是严格的 JSON 输出器。"},
             {"role": "user", "content": _MATCH_PROMPT.format(
                 job_json=json.dumps(job.model_dump(), ensure_ascii=False, indent=2),
                 profile_json=json.dumps(profile.model_dump(), ensure_ascii=False, indent=2),
                 goal_json=json.dumps(goal.model_dump(), ensure_ascii=False, indent=2),
+                recovery_context=recovery_context,
             )},
         ]
         raw = self.client.chat_json(messages)
@@ -168,14 +201,33 @@ class GeneralAgentExecutor:
     # ------------------------------------------------- AgentExecutor Protocol
 
     async def execute(self, request: ExecutionRequest) -> ExecutionResult:
-        job = JobRecord(**request.task.get("job", {}))
-        profile = CandidateProfile(**request.context["candidate_profile"])
-        goal = CareerGoal(**request.context["career_goal"])
-        prediction = self.predict(job, profile, goal)
+        job_raw = request.task.get("job") or {}
+        job = JobRecord(**job_raw)
+        profile_raw = request.context.get("candidate_profile")
+        goal_raw = request.context.get("career_goal")
+        # ContextBuilder serializes sections as text; accept both native dicts
+        # and JSON strings so the Runtime remains the sole context assembler.
+        if profile_raw is None and isinstance(request.context.get("profile"), str):
+            combined = json.loads(request.context["profile"])
+            profile_raw = combined.get("candidate_profile")
+            goal_raw = combined.get("career_goal")
+        if isinstance(profile_raw, str):
+            profile_raw = json.loads(profile_raw)
+        if isinstance(goal_raw, str):
+            goal_raw = json.loads(goal_raw)
+        profile = CandidateProfile(**(profile_raw or {}))
+        goal = CareerGoal(**(goal_raw or {}))
+        prediction = await asyncio.to_thread(self.predict, job, profile, goal, request.context)
+        usage = {
+            "model": getattr(self.client, "model", None) if self.client else None,
+            "provider": getattr(self.client, "provider", None) if self.client else None,
+            "source": "llm",
+            **(getattr(self.client, "last_usage", {}) if self.client else {}),
+        }
         return ExecutionResult(
             status=ExecutionStatus.SUCCESS,
             output=json.dumps(prediction.model_dump(), ensure_ascii=False),
-            usage={"model": self.client.model if self.client else None, "source": "llm"},
+            usage=usage,
         )
 
     async def resume(self, request: ExecutionRequest) -> ExecutionResult:
@@ -197,4 +249,9 @@ def make_llm_predictor(dataset) -> callable:  # noqa: A003
     def predict(job: JobRecord) -> MatchPrediction:
         return executor.predict(job, dataset.profile, dataset.goal)
 
+    # Expose non-secret run metadata to benchmark recording without exposing
+    # the API key or coupling the recorder to the concrete client.
+    predict.provider = cfg["provider"]
+    predict.model = cfg["model"]
+    predict.config = {k: v for k, v in cfg.items() if k != "api_key"}
     return predict

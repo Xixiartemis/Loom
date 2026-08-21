@@ -10,9 +10,14 @@ Validator 只判断,不修改预测。确定性优先,不依赖 LLM。
 
 from __future__ import annotations
 
+import json
+from typing import Any, Optional
+
 from lhas.job.detectors import ExpirationValidator
 from lhas.job.matching import RuleBasedMatcher
 from lhas.job.models import JobDataset, MatchPrediction
+from lhas.domain.models import Attempt, Task
+from lhas.executors.protocol import ExecutionResult
 from lhas.validation import ValidationCheck, ValidationResult
 
 
@@ -24,9 +29,44 @@ class JobMatchValidator:
         self._hard = RuleBasedMatcher(dataset.profile, dataset.goal)
         self._expiration = ExpirationValidator(as_of=as_of or dataset.as_of_date)
 
-    def validate(self, prediction: MatchPrediction) -> ValidationResult:
+    async def validate(
+        self,
+        prediction: Optional[MatchPrediction] = None,
+        *,
+        task: Optional[Task] = None,
+        attempt: Optional[Attempt] = None,
+        result: Optional[ExecutionResult] = None,
+    ) -> ValidationResult:
+        """Validate either a prediction directly or a Runtime execution.
+
+        The direct form remains useful for deterministic dataset tests.  The
+        Runtime form parses the executor JSON and always binds the result to
+        the real ``Attempt.id`` (never to a JD id).
+        """
+        if prediction is None:
+            if result is None or not result.output:
+                raise ValueError("JobMatchValidator requires a prediction or non-empty execution output")
+            try:
+                raw: Any = json.loads(result.output)
+                prediction = MatchPrediction(**raw)
+            except (json.JSONDecodeError, TypeError, ValueError) as exc:
+                attempt_id = attempt.id if attempt is not None else "unknown"
+                return ValidationResult(
+                    attempt_id=attempt_id,
+                    passed=False,
+                    checks=[ValidationCheck(name="structure", passed=False, detail=f"invalid MatchPrediction: {exc}")],
+                    evidence=f"invalid MatchPrediction output: {exc}",
+                )
+        if prediction.job_id not in self.dataset.jobs:
+            attempt_id = attempt.id if attempt is not None else prediction.job_id
+            return ValidationResult(
+                attempt_id=attempt_id,
+                passed=False,
+                checks=[ValidationCheck(name="structure", passed=False, detail=f"unknown job_id={prediction.job_id}")],
+                evidence=f"unknown job_id={prediction.job_id}",
+            )
         job = self.dataset.jobs[prediction.job_id]
-        gt = self.dataset.labels[prediction.job_id]
+        attempt_id = attempt.id if attempt is not None else prediction.job_id
         checks: list[ValidationCheck] = []
 
         # V2 rule: 硬约束一致性(与确定性规则比对,不信任模型自称)
@@ -69,7 +109,7 @@ class JobMatchValidator:
             f"{c.name}: {'ok' if c.passed else 'FAIL - ' + (c.detail or '')}" for c in checks
         )
         return ValidationResult(
-            attempt_id=prediction.job_id,
+            attempt_id=attempt_id,
             passed=passed,
             checks=checks,
             evidence=evidence,
