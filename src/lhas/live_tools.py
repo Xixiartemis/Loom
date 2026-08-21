@@ -34,15 +34,28 @@ class ResumeReaderTool:
 class SearchProvider:
     async def search(self, query: str, max_results: int) -> list[dict[str, Any]]: raise NotImplementedError
 
-class HttpSearchProvider(SearchProvider):
+class TavilySearchProvider(SearchProvider):
     async def search(self, query, max_results):
-        endpoint=os.getenv("LHAS_SEARCH_ENDPOINT"); key=os.getenv("LHAS_SEARCH_API_KEY")
-        if not endpoint or not key: raise RuntimeError("SEARCH_PROVIDER_NOT_CONFIGURED: set LHAS_SEARCH_ENDPOINT and LHAS_SEARCH_API_KEY")
-        url=endpoint+(("&" if "?" in endpoint else "?")+urllib.parse.urlencode({"q":query,"max_results":max_results}))
-        req=urllib.request.Request(url,headers={"Authorization":f"Bearer {key}","Accept":"application/json"})
-        with urllib.request.urlopen(req,timeout=15) as resp: payload=json.loads(resp.read().decode("utf-8"))
-        rows=payload.get("results", payload if isinstance(payload,list) else [])
-        return [{"title":str(x.get("title","")),"url":str(x.get("url",x.get("link",""))),"snippet":str(x.get("snippet","")),"source":str(x.get("source",endpoint))} for x in rows[:max_results]]
+        endpoint=os.getenv("LHAS_SEARCH_ENDPOINT", "https://api.tavily.com/search"); key=os.getenv("LHAS_SEARCH_API_KEY")
+        if not key: raise RuntimeError("SEARCH_PROVIDER_NOT_CONFIGURED")
+        body=json.dumps({"query":query,"max_results":max_results}).encode("utf-8")
+        req=urllib.request.Request(endpoint,data=body,method="POST",headers={"Authorization":f"Bearer {key}","Content-Type":"application/json","Accept":"application/json"})
+        try:
+            with urllib.request.urlopen(req,timeout=15) as resp: payload=json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code in (401,403): raise RuntimeError("AUTH_ERROR")
+            if exc.code == 429: raise RuntimeError("RATE_LIMIT")
+            if exc.code >= 500: raise RuntimeError("UPSTREAM_5XX")
+            raise RuntimeError("NETWORK_ERROR")
+        except TimeoutError: raise RuntimeError("TIMEOUT")
+        except urllib.error.URLError: raise RuntimeError("NETWORK_ERROR")
+        except json.JSONDecodeError: raise RuntimeError("INVALID_RESPONSE")
+        if not isinstance(payload,dict) or not isinstance(payload.get("results"),list): raise RuntimeError("INVALID_RESPONSE")
+        rows=payload["results"]
+        return [{"title":str(x.get("title","")),"url":str(x.get("url","")),"snippet":str(x.get("content",x.get("snippet",""))),"source":"tavily","score":x.get("score")} for x in rows[:max_results] if isinstance(x,dict)]
+
+class HttpSearchProvider(TavilySearchProvider):
+    """Backward-compatible name for the default Tavily HTTP adapter."""
 
 class WebSearchTool:
     capability=CapabilitySpec(name="web.search",description="Search web through configured provider",input_schema={"query":"string","max_results":"integer"},output_schema={"results":"array"})
@@ -53,7 +66,11 @@ class WebSearchTool:
             if not q: return _fail("INVALID_INPUT","query is required")
             rows=await self.provider.search(q,n)
             return ToolResult(status=ToolResultStatus.SUCCESS,output={"results":rows},usage={"result_count":len(rows)})
-        except Exception as exc: return _fail("SEARCH_CONFIG_ERROR" if "NOT_CONFIGURED" in str(exc) else "NETWORK_ERROR",str(exc))
+        except Exception as exc:
+            kind=str(exc).split(":",1)[0]
+            if kind == "SEARCH_PROVIDER_NOT_CONFIGURED": return _fail(kind,kind)
+            if kind in {"AUTH_ERROR","RATE_LIMIT","UPSTREAM_5XX","TIMEOUT","NETWORK_ERROR","INVALID_RESPONSE"}: return _fail(kind,kind)
+            return _fail("NETWORK_ERROR","search provider failure")
 
 def _safe_url(raw: str) -> str:
     p=urllib.parse.urlparse(raw)

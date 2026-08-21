@@ -1,6 +1,8 @@
 import asyncio, json
 from pathlib import Path
-from lhas.live_tools import ResumeReaderTool, WebFetchTool, WebSearchTool, SearchProvider
+from lhas.live_tools import ResumeReaderTool, WebFetchTool, WebSearchTool, SearchProvider, TavilySearchProvider
+import lhas.live_tools as live_tools
+import urllib.error
 from lhas.tools.protocol import ToolRequest, ToolResult, ToolResultStatus
 from lhas.job.live_pipeline import deduplicate_jobs, expiration_status, shortlist_record
 from lhas import HARNESS_VERSION
@@ -23,6 +25,39 @@ def test_search_requires_provider_config(monkeypatch):
     monkeypatch.delenv("LHAS_SEARCH_ENDPOINT",raising=False); monkeypatch.delenv("LHAS_SEARCH_API_KEY",raising=False)
     result=asyncio.run(WebSearchTool().execute(req("web.search",{"query":"x"})))
     assert result.status == ToolResultStatus.FAILURE and "CONFIG" in result.error_type
+
+def test_tavily_post_headers_body(monkeypatch):
+    captured={}
+    class Resp:
+        def __enter__(self): return self
+        def __exit__(self,*a): pass
+        def read(self): return b'{"results":[{"title":"T","url":"https://e","content":"evidence","score":0.9}]}'
+    def fake(req,timeout):
+        captured.update(method=req.method,headers=dict(req.header_items()),body=json.loads(req.data.decode()))
+        return Resp()
+    monkeypatch.setenv("LHAS_SEARCH_API_KEY","secret-value"); monkeypatch.setattr(live_tools.urllib.request,"urlopen",fake)
+    result=asyncio.run(WebSearchTool(TavilySearchProvider()).execute(req("web.search",{"query":"q","max_results":3})))
+    assert captured["method"] == "POST" and captured["body"] == {"query":"q","max_results":3}
+    assert captured["headers"]["Authorization"] == "Bearer secret-value" and captured["headers"]["Content-type"] == "application/json"
+    assert result.output["results"][0]["snippet"] == "evidence" and result.output["results"][0]["score"] == 0.9
+
+def test_tavily_error_classification(monkeypatch):
+    class E:
+        def __init__(self,code): self.code=code
+    for code,expected in ((401,"AUTH_ERROR"),(429,"RATE_LIMIT"),(500,"UPSTREAM_5XX")):
+        def fake(req,timeout,code=code): raise urllib.error.HTTPError("https://e",code,"x",{},None)
+        monkeypatch.setenv("LHAS_SEARCH_API_KEY","x"); monkeypatch.setattr(live_tools.urllib.request,"urlopen",fake)
+        result=asyncio.run(WebSearchTool(TavilySearchProvider()).execute(req("web.search",{"query":"q"})))
+        assert result.error_type == expected
+
+def test_tavily_invalid_json(monkeypatch):
+    class Resp:
+        def __enter__(self): return self
+        def __exit__(self,*a): pass
+        def read(self): return b"not-json"
+    monkeypatch.setenv("LHAS_SEARCH_API_KEY","x"); monkeypatch.setattr(live_tools.urllib.request,"urlopen",lambda *a,**k: Resp())
+    result=asyncio.run(WebSearchTool(TavilySearchProvider()).execute(req("web.search",{"query":"q"})))
+    assert result.error_type == "INVALID_RESPONSE"
 
 def test_fetch_ssrf_guard():
     result=asyncio.run(WebFetchTool().execute(req("web.fetch",{"url":"http://127.0.0.1/"})))

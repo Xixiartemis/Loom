@@ -26,6 +26,7 @@ from lhas.planning.models import Goal, CapabilitySpec
 from lhas.planning.planner import DeterministicPlanner
 from lhas.planning.service import PlanExecutionService
 from lhas.persistence.planning_repositories import GoalRepository, PlanRepository
+from lhas.persistence.phaseb_repos import FailureReportRepository, RecoveryActionRepository
 
 app = typer.Typer(help="LHAS — Long-Horizon Agent System runtime / harness CLI.")
 goal_app = typer.Typer(help="Run and inspect constrained goals")
@@ -57,9 +58,21 @@ def goal_inspect(goal_id: str):
     db=_open_db(); g=GoalRepository(db).get(goal_id)
     if not g: raise typer.BadParameter(f"goal {goal_id} not found")
     print(f"Goal {g.id}: {g.objective}")
-    # Plan ids are shown when available through event payloads.
+    plan_id=None
     for ev in EventStore(db).list_all():
-        if ev.event_type.value in {"PLAN_CREATED","PLAN_COMPLETED","PLAN_FAILED"} and ev.payload.get("plan",{}).get("goal_id")==goal_id: print(ev.event_type.value,ev.payload)
+        if ev.event_type.value == "PLAN_CREATED" and ev.payload.get("plan",{}).get("goal_id")==goal_id: plan_id=ev.payload["plan"].get("id")
+    if plan_id:
+        plan=PlanRepository(db).get(plan_id); print(f"Plan {plan.id} status={plan.status.value}")
+        rr, ar, fr, rec = RunRepository(db), AttemptRepository(db), FailureReportRepository(db), RecoveryActionRepository(db)
+        for step in plan.steps:
+            print(f"STEP {step.capability} status={step.status.value} task={step.task_id or '-'}")
+            if step.task_id:
+                for run in rr.list_for_task(step.task_id):
+                    for attempt in ar.list_for_run(run.id):
+                        reports=fr.list_for_attempt(attempt.id); actions=rec.list_for_attempt(attempt.id)
+                        print(f"  RUN {run.id} ATTEMPT {attempt.attempt_number} status={attempt.status.value} error_type={attempt.error_type or '-'} error_message={attempt.error_message or '-'}")
+                        for report in reports: print(f"    failure_type={report.failure_type.value}")
+                        for action in actions: print(f"    recovery={action.action_type.value}")
     print(f"project_id={g.project_id} capabilities={g.allowed_capabilities}"); db.close()
 
 
