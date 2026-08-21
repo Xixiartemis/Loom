@@ -13,7 +13,7 @@ class GoalRepository:
     def get(self, i):
         with self.db.session() as s:
             r=s.get(GoalRow,i)
-            return Goal(id=r.id,project_id=r.project_id,objective=r.objective,constraints=json_loads(r.constraints) or [],success_criteria=json_loads(r.success_criteria) or [],allowed_capabilities=json_loads(r.allowed_capabilities) or [],requires_human_approval=bool(r.requires_human_approval),metadata=json_loads(r.metadata_json) or [],created_at=r.created_at) if r else None
+            return Goal(id=r.id,project_id=r.project_id,objective=r.objective,constraints=json_loads(r.constraints) or [],success_criteria=json_loads(r.success_criteria) or [],allowed_capabilities=json_loads(r.allowed_capabilities) or [],requires_human_approval=bool(r.requires_human_approval),metadata=json_loads(r.metadata_json) or {},created_at=r.created_at) if r else None
 
 class PlanRepository:
     def __init__(self, db): self.db=db
