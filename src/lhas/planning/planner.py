@@ -38,10 +38,6 @@ class DeterministicPlanner:
         previous: str | None = None
         for index, name in enumerate(requested, start=1):
             spec = by_name[name]
-            inputs = dict(goal.metadata.get("step_inputs", {}).get(name, {}))
-            if name == "document.resume.read" and goal.metadata.get("resume_path"): inputs.setdefault("path", goal.metadata["resume_path"])
-            if name == "web.search" and goal.metadata.get("query"): inputs.setdefault("query", goal.metadata["query"]); inputs.setdefault("max_results", 10)
-            if name == "artifact.write" and goal.metadata.get("output_dir"): inputs.setdefault("output_dir", goal.metadata["output_dir"])
             step = PlanStep(
                 title=f"Step {index}: {name}",
                 objective=spec.description or f"Execute capability {name}",
@@ -49,7 +45,6 @@ class DeterministicPlanner:
                 depends_on=[previous] if previous else [],
                 expected_output="structured tool result",
                 success_criteria=list(goal.success_criteria),
-                inputs=inputs,
             )
             steps.append(step)
             previous = step.id

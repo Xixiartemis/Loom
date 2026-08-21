@@ -57,7 +57,7 @@ class PlanExecutionService:
             raise NotImplementedError(f"unsupported plan mode: {plan.mode.value}")
         self._emit(EventType.PLAN_STARTED, {"plan_id": plan.id})
         task_repo = TaskRepository(self.db)
-        execution_context = {"runtime": {**dict(context or {}), "goal_id": goal.id}, "steps": {}}
+        execution_context = {"runtime": dict(context or {}), "steps": {}}
         for step in plan.steps:
             if step.status == PlanStepStatus.COMPLETED:
                 execution_context["steps"][step.id] = step.execution_context.get("steps", {}).get(step.id, {"capability": step.capability, "output": step.output, "artifacts": {}, "usage": {}})

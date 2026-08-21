@@ -14,9 +14,6 @@ dependencies = [
 dev = [
     "pytest>=8,<9",
 ]
-live = [
-    "pypdf>=5,<6",
-]
 
 [project.scripts]
 lhas = "lhas.cli:app"
