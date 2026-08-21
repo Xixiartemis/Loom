@@ -113,6 +113,19 @@ class RuleFailureClassifier:
 
         # --- DATA family --------------------------------------------------------
         if validation is not None and not validation.passed:
+            failed_checks = {c.name for c in validation.checks if not c.passed}
+            if "direction_conflict" in failed_checks:
+                return self._report(
+                    attempt, FailureType.WRONG_MATCH, FailureClass.REASONING, evidence,
+                    "predicted fit conflicts with the career direction",
+                    0.95, "retry with career goal and direction-conflict evidence",
+                )
+            if failed_checks & {"ranking_order", "ranking_quality", "bad_ranking"}:
+                return self._report(
+                    attempt, FailureType.BAD_RANKING, FailureClass.REASONING, evidence,
+                    "predicted ranking failed the benchmark ordering checks",
+                    0.95, "retry with ranking feedback and relevant history",
+                )
             if not (result and result.output and result.output.strip()):
                 return self._report(attempt, FailureType.EMPTY_RESULT, FailureClass.DATA, evidence,
                                     "executor produced no usable output",

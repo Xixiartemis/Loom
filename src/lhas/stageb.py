@@ -201,6 +201,7 @@ def run_stageb(
         model=model,
         timeout_seconds=10.0,
         max_attempts=3,
+        allow_dirty=True,  # local acceptance suite; formal Eval uses the strict default
     )
     return results, exp_id
 

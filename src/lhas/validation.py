@@ -47,6 +47,17 @@ class ValidationResult(BaseModel):
     stderr: Optional[str] = None
     duration_ms: int = 0
 
+    def __await__(self):
+        """Allow legacy synchronous validators to satisfy the async protocol.
+
+        Phase C job validation originally exposed a synchronous helper.  Keeping
+        the result awaitable lets existing offline callers continue to use it
+        while the Runtime can uniformly ``await validator.validate(...)``.
+        """
+        async def _return_self():
+            return self
+        return _return_self().__await__()
+
 
 class Validator(Protocol):
     async def validate(

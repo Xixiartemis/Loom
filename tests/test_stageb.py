@@ -37,6 +37,16 @@ def test_stageb_experiment_record_metadata(db, tmp_path, project):
     for required in ["FAILURE_CLASSIFIED", "RECOVERY_DECIDED", "RECOVERY_STARTED", "VALIDATION_PASSED", "TASK_COMPLETED"]:
         assert required in types
 
+    attempt_dir = exp_dir / "tasks" / "recoverable-context" / "attempts" / "attempt-01"
+    for artifact in [
+        "context.json", "context.md", "validation.json", "failure.json",
+        "recovery.json", "executor-result.json", "usage.json", "stdout.log", "stderr.log",
+    ]:
+        assert (attempt_dir / artifact).exists(), artifact
+    context = json.loads((attempt_dir / "context.json").read_text(encoding="utf-8"))
+    assert context["policy"] == "CP-2"
+    assert json.loads((attempt_dir / "failure.json").read_text(encoding="utf-8"))[0]["attempt_id"]
+
 
 def test_stageb_recovery_success_rate(db, tmp_path, project):
     """2 of 3 tasks recover; the unrecoverable one escalates — the pipeline

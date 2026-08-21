@@ -20,13 +20,17 @@ experiments/
             ├── timeline.jsonl
             └── runs/
                 └── attempt-01/
+                    ├── context.json
                     ├── context.md
+                    ├── executor-result.json
                     ├── executor-events.jsonl
                     ├── stdout.log
                     ├── stderr.log
                     ├── artifacts.json
                     ├── validation.json
-                    └── failure.json
+                    ├── failure.json
+                    ├── recovery.json
+                    └── usage.json
 ```
 
 SWE Benchmark 可额外保存：

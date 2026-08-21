@@ -185,6 +185,8 @@ def jobbench(
     experiment_id: Optional[str] = typer.Option(None, help="Explicit EXP id (default auto)"),
     as_of: Optional[str] = typer.Option(None, help="Reference date YYYY-MM-DD for expiration"),
     no_record: bool = typer.Option(False, "--no-record", help="Do not write an experiment record"),
+    allow_dirty: bool = typer.Option(False, "--allow-dirty", help="Allow recording a development experiment from a dirty workspace"),
+    recovery: bool = typer.Option(False, "--recovery", help="Run the LLM predictor through Task/Run/Attempt/Validation/Recovery"),
 ) -> None:
     """Run the Job Benchmark on a locked dataset and write an EXP-JOB record."""
     from datetime import date
@@ -201,7 +203,10 @@ def jobbench(
         print("warning : ground truth is DRAFT — metrics are provisional until human review")
 
     as_of_date = date.fromisoformat(as_of) if as_of else None
-    result = run_job_bench(ds, predictor=predictor, as_of=as_of_date)
+    runtime_db = _open_db() if recovery else None
+    if recovery and predictor != "llm":
+        raise typer.BadParameter("--recovery currently requires --predictor llm")
+    result = run_job_bench(ds, predictor=predictor, as_of=as_of_date, runtime=recovery, db=runtime_db)
 
     m = result.metrics
     print("-" * 56)
@@ -221,6 +226,8 @@ def jobbench(
         print(f"  {e.job_id}  {marks}  hit={e.evidence_hit:.2f} cov={e.evidence_coverage:.2f}{'  HALLUC' if e.hallucination else ''}")
 
     if no_record:
+        if runtime_db is not None:
+            runtime_db.close()
         return
     recorder = JobExperimentRecorder()
     exp_id = experiment_id or recorder.next_id("JOB")
@@ -232,13 +239,16 @@ def jobbench(
         model=result.model,
         provider="mock" if result.predictor == "rule" else "llm",
         harness_version=HARNESS_VERSION,
-        context_policy_version="CP-1",
-        recovery="OFF",
+        context_policy_version="CP-2" if recovery else "CP-1",
+        recovery="ON" if recovery else "OFF",
         metrics=m,
         predictions=[p.model_dump() for p in result.predictions],
         evaluations=[e.model_dump() for e in result.evaluations],
+        allow_dirty=allow_dirty,
     )
     print(f"experiment record: experiments/{exp_id}/")
+    if runtime_db is not None:
+        runtime_db.close()
 
 
 @app.command()

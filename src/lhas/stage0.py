@@ -193,6 +193,7 @@ def run_stage0(
         model=model,
         timeout_seconds=max(s.timeout_seconds for s in SCENARIOS),
         max_attempts=3,
+        allow_dirty=True,  # local acceptance suite; formal Eval uses the strict default
     )
     return results, exp_id
 

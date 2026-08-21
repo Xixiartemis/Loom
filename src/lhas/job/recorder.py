@@ -34,13 +34,18 @@ class JobExperimentRecorder:
         predictions: list[dict[str, Any]],
         evaluations: list[dict[str, Any]],
         git: Optional[dict[str, Any]] = None,
+        allow_dirty: bool = False,
     ) -> Path:
         exp_dir = self.base_dir / experiment_id
         if exp_dir.exists():
             raise FileExistsError(f"experiment already exists: {exp_dir} — never overwrite")
-        (exp_dir / "results").mkdir(parents=True)
-
         git = git or git_head_info()
+        if git.get("dirty_workspace") and not allow_dirty:
+            raise ValueError(
+                "formal experiments require a clean git workspace; "
+                "pass allow_dirty=True only for development runs"
+            )
+        (exp_dir / "results").mkdir(parents=True)
         metadata = {
             "experiment_id": experiment_id,
             "kind": "JOB_BENCHMARK",

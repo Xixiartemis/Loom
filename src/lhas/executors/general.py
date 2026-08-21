@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 import os
+import asyncio
+import time
 import urllib.error
 import urllib.request
 from typing import Any, Optional
@@ -43,6 +45,8 @@ class LLMClient:
         self.model = model
         self.timeout = timeout
         self.temperature = temperature
+        self.last_usage: dict[str, Any] = {}
+        self.last_latency_ms: int = 0
 
     def chat_json(self, messages: list[dict[str, str]]) -> dict[str, Any]:
         payload = {
@@ -60,6 +64,7 @@ class LLMClient:
             },
             method="POST",
         )
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
@@ -67,6 +72,14 @@ class LLMClient:
             raise RuntimeError(f"LLM API HTTP {exc.code}: {exc.read().decode('utf-8', 'ignore')[:300]}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"LLM API unreachable: {exc.reason}") from exc
+        self.last_latency_ms = int((time.monotonic() - started) * 1000)
+        raw_usage = body.get("usage") or {}
+        self.last_usage = {
+            "input_tokens": raw_usage.get("prompt_tokens", raw_usage.get("input_tokens")),
+            "output_tokens": raw_usage.get("completion_tokens", raw_usage.get("output_tokens")),
+            "total_tokens": raw_usage.get("total_tokens"),
+            "latency_ms": self.last_latency_ms,
+        }
         try:
             content = body["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as exc:
@@ -168,14 +181,33 @@ class GeneralAgentExecutor:
     # ------------------------------------------------- AgentExecutor Protocol
 
     async def execute(self, request: ExecutionRequest) -> ExecutionResult:
-        job = JobRecord(**request.task.get("job", {}))
-        profile = CandidateProfile(**request.context["candidate_profile"])
-        goal = CareerGoal(**request.context["career_goal"])
-        prediction = self.predict(job, profile, goal)
+        job_raw = request.task.get("job") or {}
+        job = JobRecord(**job_raw)
+        profile_raw = request.context.get("candidate_profile")
+        goal_raw = request.context.get("career_goal")
+        # ContextBuilder serializes sections as text; accept both native dicts
+        # and JSON strings so the Runtime remains the sole context assembler.
+        if profile_raw is None and isinstance(request.context.get("profile"), str):
+            combined = json.loads(request.context["profile"])
+            profile_raw = combined.get("candidate_profile")
+            goal_raw = combined.get("career_goal")
+        if isinstance(profile_raw, str):
+            profile_raw = json.loads(profile_raw)
+        if isinstance(goal_raw, str):
+            goal_raw = json.loads(goal_raw)
+        profile = CandidateProfile(**(profile_raw or {}))
+        goal = CareerGoal(**(goal_raw or {}))
+        prediction = await asyncio.to_thread(self.predict, job, profile, goal)
+        usage = {
+            "model": self.client.model if self.client else None,
+            "provider": "llm",
+            "source": "llm",
+            **(self.client.last_usage if self.client else {}),
+        }
         return ExecutionResult(
             status=ExecutionStatus.SUCCESS,
             output=json.dumps(prediction.model_dump(), ensure_ascii=False),
-            usage={"model": self.client.model if self.client else None, "source": "llm"},
+            usage=usage,
         )
 
     async def resume(self, request: ExecutionRequest) -> ExecutionResult:
