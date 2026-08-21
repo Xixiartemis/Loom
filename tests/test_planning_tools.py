@@ -6,6 +6,8 @@ from lhas.planning.planner import DeterministicPlanner
 from lhas.planning.service import PlanExecutionService
 from lhas.tools.fakes import FakeTool
 from lhas.tools.registry import ToolRegistry
+from lhas.persistence.planning_repositories import GoalRepository, PlanRepository
+from lhas import HARNESS_VERSION
 
 def test_planner_and_tool_execution(db):
     project=Project(name="planning-domain")
@@ -32,3 +34,22 @@ def test_human_approval_blocks_execution(db):
     goal=Goal(project_id=project.id,objective="patch",allowed_capabilities=[spec.name],metadata={"plan_steps":[spec.name]})
     plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).execute_goal(goal))
     assert plan.status == PlanStatus.WAITING_FOR_HUMAN_APPROVAL
+    resumed=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).resume_after_approval(goal,"code.patch"))
+    assert resumed.status == PlanStatus.COMPLETED
+    assert GoalRepository(db).get(goal.id).objective == goal.objective
+    assert PlanRepository(db).get(resumed.id).status == PlanStatus.COMPLETED
+
+def test_inter_step_dataflow_and_harness_version(db):
+    project=Project(name="dataflow-domain"); ProjectRepository(db).create(project)
+    seen=[]
+    def first(req): return {"token":"step-one"}
+    def second(req): seen.append(req.arguments); return {"received": req.arguments}
+    a=CapabilitySpec(name="a",description="a"); b=CapabilitySpec(name="b",description="b")
+    reg=ToolRegistry(); reg.register(FakeTool(a,first)); reg.register(FakeTool(b,second))
+    goal=Goal(project_id=project.id,objective="flow",allowed_capabilities=["a","b"],metadata={"plan_steps":["a","b"]})
+    plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).execute_goal(goal))
+    assert plan.status == PlanStatus.COMPLETED and seen and seen[0]["a"] == {"token":"step-one"}
+    from lhas.persistence.repositories import RunRepository
+    rr=RunRepository(db)
+    runs=[rr.list_for_task(s.task_id)[0] for s in plan.steps]
+    assert all(r.harness_version == HARNESS_VERSION for r in runs)

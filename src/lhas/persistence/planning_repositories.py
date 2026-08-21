@@ -7,7 +7,8 @@ from lhas.planning.models import Goal, Plan, PlanStep
 class GoalRepository:
     def __init__(self, db): self.db=db
     def create(self, g):
-        with self.db.session() as s: s.add(GoalRow(id=g.id,project_id=g.project_id,objective=g.objective,constraints=json_dumps(g.constraints),success_criteria=json_dumps(g.success_criteria),allowed_capabilities=json_dumps(g.allowed_capabilities),requires_human_approval=g.requires_human_approval,metadata_json=json_dumps(g.metadata),created_at=g.created_at))
+        with self.db.session() as s:
+            if s.get(GoalRow, g.id) is None: s.add(GoalRow(id=g.id,project_id=g.project_id,objective=g.objective,constraints=json_dumps(g.constraints),success_criteria=json_dumps(g.success_criteria),allowed_capabilities=json_dumps(g.allowed_capabilities),requires_human_approval=g.requires_human_approval,metadata_json=json_dumps(g.metadata),created_at=g.created_at))
         return g
     def get(self, i):
         with self.db.session() as s:
@@ -19,11 +20,18 @@ class PlanRepository:
     def create(self,p):
         with self.db.session() as s:
             s.add(PlanRow(id=p.id,goal_id=p.goal_id,version=p.version,mode=p.mode.value,status=p.status.value,created_at=p.created_at))
-            for i,x in enumerate(p.steps): s.add(PlanStepRow(id=x.id,plan_id=p.id,position=i,title=x.title,objective=x.objective,capability=x.capability,depends_on=json_dumps(x.depends_on),inputs=json_dumps(x.inputs),expected_output=x.expected_output,success_criteria=json_dumps(x.success_criteria),status=x.status.value,task_id=x.task_id))
+            for i,x in enumerate(p.steps): s.add(PlanStepRow(id=x.id,plan_id=p.id,position=i,title=x.title,objective=x.objective,capability=x.capability,depends_on=json_dumps(x.depends_on),inputs=json_dumps(x.inputs),expected_output=x.expected_output,success_criteria=json_dumps(x.success_criteria),status=x.status.value,task_id=x.task_id,output=json_dumps(x.output),execution_context=json_dumps(x.execution_context)))
         return p
     def update(self,p):
         with self.db.session() as s:
             r=s.get(PlanRow,p.id); r.status=p.status.value
             for x in p.steps:
-                q=s.get(PlanStepRow,x.id); q.status=x.status.value; q.task_id=x.task_id
+                q=s.get(PlanStepRow,x.id); q.status=x.status.value; q.task_id=x.task_id; q.output=json_dumps(x.output); q.execution_context=json_dumps(x.execution_context)
         return p
+    def get(self, plan_id):
+        with self.db.session() as s:
+            r=s.get(PlanRow, plan_id)
+            if not r: return None
+            rows=s.execute(select(PlanStepRow).where(PlanStepRow.plan_id==plan_id).order_by(PlanStepRow.position)).scalars().all()
+            steps=[PlanStep(id=x.id,title=x.title,objective=x.objective,capability=x.capability,depends_on=json_loads(x.depends_on) or [],inputs=json_loads(x.inputs) or {},expected_output=x.expected_output or "",success_criteria=json_loads(x.success_criteria) or [],status=x.status,task_id=x.task_id,output=json_loads(x.output),execution_context=json_loads(x.execution_context) or {}) for x in rows]
+            return Plan(id=r.id,goal_id=r.goal_id,version=r.version,mode=r.mode,status=r.status,steps=steps,created_at=r.created_at)

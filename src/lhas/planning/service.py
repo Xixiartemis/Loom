@@ -1,5 +1,6 @@
 from typing import Any
 from lhas.domain.enums import EventType, ExecutionStatus
+from lhas import HARNESS_VERSION
 from lhas.domain.models import Task, new_id
 from lhas.executors.protocol import ExecutionRequest, ExecutionResult
 from lhas.persistence.database import Database
@@ -27,7 +28,9 @@ class _ToolExecutor:
             typ = EventType.TOOL_CALL_COMPLETED if result.status == ToolResultStatus.SUCCESS else EventType.TOOL_CALL_FAILED
             event.append(typ, task_id=request.task_id, run_id=request.run_id, attempt_id=request.attempt_id, payload={"request": tr.model_dump(mode="json"), "result": result.model_dump(mode="json")})
             status = ExecutionStatus.SUCCESS if result.status == ToolResultStatus.SUCCESS else ExecutionStatus.FAILURE
-            return ExecutionResult(status=status, output=str(result.output) if result.output is not None else None, artifacts=result.artifacts, usage=result.usage, raw=result.model_dump(mode="json"), error_type=result.error_type, error_message=result.error_message)
+            import json
+            output = result.output if isinstance(result.output, str) else json.dumps(result.output, ensure_ascii=False)
+            return ExecutionResult(status=status, output=output, artifacts=result.artifacts, usage=result.usage, raw=result.model_dump(mode="json"), error_type=result.error_type, error_message=result.error_message)
         except Exception as exc:
             event.append(EventType.TOOL_CALL_FAILED, task_id=request.task_id, run_id=request.run_id, attempt_id=request.attempt_id, payload={"request": tr.model_dump(mode="json"), "error": str(exc)})
             return ExecutionResult(status=ExecutionStatus.FAILURE, error_type=type(exc).__name__, error_message=str(exc))
@@ -38,7 +41,7 @@ class _ToolExecutor:
 class PlanExecutionService:
     def __init__(self, db: Database, planner: Planner, registry: ToolRegistry): self.db, self.planner, self.registry = db, planner, registry
     def _emit(self, typ, payload): EventStore(self.db).append(typ, payload=payload)
-    async def execute_goal(self, goal: Goal, *, context: dict[str, Any] | None = None, experiment_id: str | None = None) -> Plan:
+    async def execute_goal(self, goal: Goal, *, context: dict[str, Any] | None = None, experiment_id: str | None = None, approved_capabilities: set[str] | None = None) -> Plan:
         self._emit(EventType.GOAL_CREATED, {"goal": goal.model_dump(mode="json")})
         GoalRepository(self.db).create(goal)
         plan = await self.planner.create_plan(goal=goal, capabilities=self.registry.specs(), context=context or {})
@@ -46,18 +49,33 @@ class PlanExecutionService:
         self._emit(EventType.PLAN_CREATED, {"plan": plan.model_dump(mode="json")})
         self._emit(EventType.PLAN_STARTED, {"plan_id": plan.id})
         task_repo = TaskRepository(self.db)
+        execution_context = dict(context or {})
         for step in plan.steps:
             spec = self.registry.resolve(step.capability).capability
-            if spec.requires_human_approval or (goal.requires_human_approval and spec.side_effect):
+            if step.capability not in (approved_capabilities or set()) and (spec.requires_human_approval or (goal.requires_human_approval and spec.side_effect)):
                 step.status = PlanStepStatus.WAITING_FOR_HUMAN_APPROVAL; plan.status = PlanStatus.WAITING_FOR_HUMAN_APPROVAL
                 self._emit(EventType.HUMAN_APPROVAL_REQUIRED, {"plan_id": plan.id, "step_id": step.id, "capability": step.capability})
                 plans.update(plan); return plan
+            step.execution_context = dict(execution_context)
+            step.inputs = {**step.inputs, **execution_context}
             task = Task(project_id=goal.project_id, title=step.title, objective=step.objective, constraints=goal.constraints, acceptance_criteria=step.success_criteria, max_attempts=1)
             task_repo.create(task); step.task_id = task.id; step.status = PlanStepStatus.RUNNING
             self._emit(EventType.PLAN_STEP_STARTED, {"plan_id": plan.id, "step_id": step.id, "task_id": task.id})
-            orch = Orchestrator(self.db, executor_factory=lambda s=step: _ToolExecutor(self.registry, s, self.db, context or {}), executor_type="ToolRegistryExecutor", provider="tool-registry", model="deterministic", harness_version="HV-0.3", dataset_version="PLANNING-V0.1", experiment_id=experiment_id)
+            orch = Orchestrator(self.db, executor_factory=lambda s=step: _ToolExecutor(self.registry, s, self.db, execution_context), executor_type="ToolRegistryExecutor", provider="tool-registry", model="deterministic", harness_version=HARNESS_VERSION, dataset_version="PLANNING-V0.1", experiment_id=experiment_id)
             run = await orch.execute_task(task.id)
             if run.status.value != "COMPLETED":
                 step.status = PlanStepStatus.FAILED; plan.status = PlanStatus.FAILED; plans.update(plan); self._emit(EventType.PLAN_STEP_FAILED, {"plan_id": plan.id, "step_id": step.id, "run_id": run.id}); self._emit(EventType.PLAN_FAILED, {"plan_id": plan.id}); return plan
-            step.status = PlanStepStatus.COMPLETED; self._emit(EventType.PLAN_STEP_COMPLETED, {"plan_id": plan.id, "step_id": step.id, "run_id": run.id})
+            import json
+            payload = json.loads(run.result or "{}")
+            step.output = payload.get("output")
+            if isinstance(step.output, str):
+                try: step.output = json.loads(step.output)
+                except json.JSONDecodeError: pass
+            execution_context[step.id] = step.output
+            execution_context[step.capability] = step.output
+            step.status = PlanStepStatus.COMPLETED; plans.update(plan); self._emit(EventType.PLAN_STEP_COMPLETED, {"plan_id": plan.id, "step_id": step.id, "run_id": run.id, "output": step.output})
         plan.status = PlanStatus.COMPLETED; plans.update(plan); self._emit(EventType.PLAN_COMPLETED, {"plan_id": plan.id}); return plan
+
+    async def resume_after_approval(self, goal: Goal, capability: str, *, context: dict[str, Any] | None = None, experiment_id: str | None = None) -> Plan:
+        """Resume by explicitly granting one previously gated capability."""
+        return await self.execute_goal(goal, context=context, experiment_id=experiment_id, approved_capabilities={capability})

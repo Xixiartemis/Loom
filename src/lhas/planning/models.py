@@ -61,6 +61,8 @@ class PlanStep(BaseModel):
     success_criteria: list[str] = Field(default_factory=list)
     status: PlanStepStatus = PlanStepStatus.PENDING
     task_id: Optional[str] = None
+    output: Any = None
+    execution_context: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def no_self_dependency(self) -> "PlanStep":

@@ -77,6 +77,8 @@ class PlanStepRow(Base):
     success_criteria: Mapped[str | None] = _json_col()
     status: Mapped[str] = mapped_column(String(48), nullable=False)
     task_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    output: Mapped[str | None] = _json_col()
+    execution_context: Mapped[str | None] = _json_col()
 
 
 class RunRow(Base):
