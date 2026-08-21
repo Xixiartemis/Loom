@@ -8,6 +8,9 @@ from lhas.tools.fakes import FakeTool
 from lhas.tools.registry import ToolRegistry
 from lhas.persistence.planning_repositories import GoalRepository, PlanRepository
 from lhas import HARNESS_VERSION
+from lhas.persistence.event_store import EventStore
+from lhas.domain.enums import EventType
+from lhas.persistence.phaseb_repos import FailureReportRepository, RecoveryActionRepository, ValidationResultRepository
 
 def test_planner_and_tool_execution(db):
     project=Project(name="planning-domain")
@@ -34,7 +37,7 @@ def test_human_approval_blocks_execution(db):
     goal=Goal(project_id=project.id,objective="patch",allowed_capabilities=[spec.name],metadata={"plan_steps":[spec.name]})
     plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).execute_goal(goal))
     assert plan.status == PlanStatus.WAITING_FOR_HUMAN_APPROVAL
-    resumed=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).resume_after_approval(goal,"code.patch"))
+    resumed=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).resume_after_approval(plan.id,goal,"code.patch"))
     assert resumed.status == PlanStatus.COMPLETED
     assert GoalRepository(db).get(goal.id).objective == goal.objective
     assert PlanRepository(db).get(resumed.id).status == PlanStatus.COMPLETED
@@ -53,3 +56,35 @@ def test_inter_step_dataflow_and_harness_version(db):
     rr=RunRepository(db)
     runs=[rr.list_for_task(s.task_id)[0] for s in plan.steps]
     assert all(r.harness_version == HARNESS_VERSION for r in runs)
+
+def test_tool_failure_enters_recovery_runtime(db):
+    project=Project(name="recovery-domain"); ProjectRepository(db).create(project)
+    calls=[]
+    def scripted(req):
+        calls.append(req)
+        return "" if len(calls)==1 else {"recovered": True}
+    spec=CapabilitySpec(name="recover",description="recover")
+    reg=ToolRegistry(); reg.register(FakeTool(spec,scripted))
+    goal=Goal(project_id=project.id,objective="recover",allowed_capabilities=["recover"],metadata={"plan_steps":["recover"]})
+    plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).execute_goal(goal))
+    assert plan.status == PlanStatus.COMPLETED and len(calls)==2
+    assert len(ValidationResultRepository(db).list_for_attempt(calls[0].attempt_id)) == 1
+    assert FailureReportRepository(db).list_for_attempt(calls[0].attempt_id)
+    assert RecoveryActionRepository(db).list_for_attempt(calls[0].attempt_id)
+    types=[e.event_type for e in EventStore(db).list_all()]
+    assert EventType.FAILURE_CLASSIFIED in types and EventType.RECOVERY_STARTED in types
+
+def test_true_approval_resume_same_plan(db):
+    project=Project(name="approval-resume"); ProjectRepository(db).create(project)
+    counts={n:0 for n in ("one","two","three")}
+    def handler(name):
+        def run(req): counts[name]+=1; return name
+        return run
+    reg=ToolRegistry()
+    for name,approval in (("one",False),("two",True),("three",False)):
+        reg.register(FakeTool(CapabilitySpec(name=name,description=name,side_effect=approval,requires_human_approval=approval),handler(name)))
+    goal=Goal(project_id=project.id,objective="approval",allowed_capabilities=["one","two","three"],metadata={"plan_steps":["one","two","three"]})
+    svc=PlanExecutionService(db,DeterministicPlanner(),reg)
+    waiting=asyncio.run(svc.execute_goal(goal)); assert waiting.status == PlanStatus.WAITING_FOR_HUMAN_APPROVAL and counts == {"one":1,"two":0,"three":0}
+    resumed=asyncio.run(svc.resume_after_approval(waiting.id,goal,"two"))
+    assert resumed.id == waiting.id and resumed.status == PlanStatus.COMPLETED and counts == {"one":1,"two":1,"three":1}

@@ -58,7 +58,7 @@ class PlanRow(Base):
     __tablename__ = "plans"
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
     goal_id: Mapped[str] = mapped_column(String(32), nullable=False)
-    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    version: Mapped[str] = mapped_column(String(32), nullable=False)
     mode: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(String(48), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

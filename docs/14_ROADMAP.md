@@ -108,3 +108,6 @@ Gate：
 
 原则：
 只有当实验数据证明当前瓶颈需要它时，才引入新模块。
+## Phase D Foundation Hardening
+
+Only LINEAR plans are executable. SIMPLE_DEPENDENCY is explicitly unsupported until a later phase. Recovery reuses RecoveringOrchestrator, and human approval resumes the persisted plan without re-running completed steps.
