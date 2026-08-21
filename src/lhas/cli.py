@@ -21,8 +21,16 @@ from lhas.persistence.repositories import AttemptRepository, ProjectRepository, 
 from lhas.stage0 import print_stage0, run_stage0
 from lhas.stageb import print_stageb, run_stageb
 from lhas.task_service import create_task
+from lhas.live_tools import build_live_registry
+from lhas.planning.models import Goal, CapabilitySpec
+from lhas.planning.planner import DeterministicPlanner
+from lhas.planning.service import PlanExecutionService
+from lhas.persistence.planning_repositories import GoalRepository, PlanRepository
+from lhas.persistence.phaseb_repos import FailureReportRepository, RecoveryActionRepository
 
 app = typer.Typer(help="LHAS — Long-Horizon Agent System runtime / harness CLI.")
+goal_app = typer.Typer(help="Run and inspect constrained goals")
+app.add_typer(goal_app, name="goal")
 
 
 def _open_db() -> Database:
@@ -31,6 +39,44 @@ def _open_db() -> Database:
     db = Database(path)
     db.init_db()
     return db
+
+@goal_app.command("run")
+def goal_run(goal: str = typer.Option(...,"--goal"), file: Path = typer.Option(...,"--file"), live: bool = typer.Option(False,"--live"), output_dir: Path = typer.Option(Path("artifacts"),"--output-dir")):
+    """Run the D2 smoke pipeline; real network requires --live."""
+    if not live: raise typer.BadParameter("real web capabilities require explicit --live")
+    db=_open_db(); projects=ProjectRepository(db); project=projects.get_by_name("D2-LIVE") or projects.create(Project(name="D2-LIVE"))
+    registry=build_live_registry(); names=["document.resume.read","web.search","web.fetch","job.parse","job.match","job.rank","artifact.write"]
+    g=Goal(project_id=project.id,objective=goal,allowed_capabilities=names,metadata={"plan_steps":names,"resume_path":str(file),"query":goal,"output_dir":str(output_dir)})
+    print(f"GOAL {g.id}: {goal}")
+    plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),registry).execute_goal(g,experiment_id=None,context={"live":True}))
+    print(f"PLAN {plan.id} {plan.status.value}")
+    for s in plan.steps:
+        print(f"STEP {s.capability} {s.status.value} task={s.task_id}")
+        if s.capability == "artifact.write" and s.status.value == "COMPLETED" and isinstance(s.output,dict) and s.output.get("artifact_path"):
+            print(f"ARTIFACT {s.output['artifact_path']}")
+    db.close()
+
+@goal_app.command("inspect")
+def goal_inspect(goal_id: str):
+    db=_open_db(); g=GoalRepository(db).get(goal_id)
+    if not g: raise typer.BadParameter(f"goal {goal_id} not found")
+    print(f"Goal {g.id}: {g.objective}")
+    plan_id=None
+    for ev in EventStore(db).list_all():
+        if ev.event_type.value == "PLAN_CREATED" and ev.payload.get("plan",{}).get("goal_id")==goal_id: plan_id=ev.payload["plan"].get("id")
+    if plan_id:
+        plan=PlanRepository(db).get(plan_id); print(f"Plan {plan.id} status={plan.status.value}")
+        rr, ar, fr, rec = RunRepository(db), AttemptRepository(db), FailureReportRepository(db), RecoveryActionRepository(db)
+        for step in plan.steps:
+            print(f"STEP {step.capability} status={step.status.value} task={step.task_id or '-'}")
+            if step.task_id:
+                for run in rr.list_for_task(step.task_id):
+                    for attempt in ar.list_for_run(run.id):
+                        reports=fr.list_for_attempt(attempt.id); actions=rec.list_for_attempt(attempt.id)
+                        print(f"  RUN {run.id} ATTEMPT {attempt.attempt_number} status={attempt.status.value} error_type={attempt.error_type or '-'} error_message={attempt.error_message or '-'}")
+                        for report in reports: print(f"    failure_type={report.failure_type.value}")
+                        for action in actions: print(f"    recovery={action.action_type.value}")
+    print(f"project_id={g.project_id} capabilities={g.allowed_capabilities}"); db.close()
 
 
 @app.command("init-db")
