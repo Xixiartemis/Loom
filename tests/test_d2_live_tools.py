@@ -3,6 +3,7 @@ from pathlib import Path
 from lhas.live_tools import ResumeReaderTool, WebFetchTool, WebSearchTool, SearchProvider, TavilySearchProvider
 import lhas.live_tools as live_tools
 import urllib.error
+import socket
 import pytest
 from lhas.tools.protocol import ToolRequest, ToolResult, ToolResultStatus
 from lhas.job.live_pipeline import deduplicate_jobs, expiration_status, shortlist_record
@@ -68,6 +69,12 @@ def test_tavily_invalid_json(monkeypatch):
     result=asyncio.run(WebSearchTool(TavilySearchProvider()).execute(req("web.search",{"query":"q"})))
     assert result.error_type == "INVALID_RESPONSE"
 
+def test_tavily_timeout(monkeypatch):
+    monkeypatch.setenv("LHAS_SEARCH_API_KEY","x")
+    monkeypatch.setattr(live_tools.urllib.request,"urlopen",lambda *a,**k: (_ for _ in ()).throw(socket.timeout()))
+    result=asyncio.run(WebSearchTool(TavilySearchProvider()).execute(req("web.search",{"query":"q"})))
+    assert result.status == ToolResultStatus.FAILURE and result.error_type == "TIMEOUT"
+
 def test_fetch_ssrf_guard():
     result=asyncio.run(WebFetchTool().execute(req("web.fetch",{"url":"http://127.0.0.1/"})))
     assert result.status == ToolResultStatus.FAILURE and result.error_type == "SSRF_BLOCKED"
@@ -90,7 +97,9 @@ def test_semantic_pipeline_e2e(db,tmp_path,monkeypatch):
         def __enter__(self): return self
         def __exit__(self,*a): pass
         def read(self,n=-1): return ("<html><title>"+self.url+" Role</title><body>React TypeScript Python Agent engineer</body></html>").encode()
-    monkeypatch.setattr(live_tools.urllib.request,"urlopen",lambda req,timeout=15: Resp(req.full_url))
+    class Opener:
+        def open(self,req,timeout=15): return Resp(req.full_url)
+    monkeypatch.setattr(live_tools.urllib.request,"build_opener",lambda *a: Opener())
     from lhas.live_tools import ResumeReaderTool, WebSearchTool, WebFetchTool, JobParseTool, JobMatchTool, JobRankTool, ShortlistArtifactTool
     registry=ToolRegistry()
     for t in (ResumeReaderTool(),WebSearchTool(P()),WebFetchTool(),JobParseTool(),JobMatchTool(),JobRankTool(),ShortlistArtifactTool()): registry.register(t)
@@ -133,10 +142,57 @@ def test_all_fetch_failed_plan_recovery(db):
     goal=Goal(project_id=project.id,objective="x",allowed_capabilities=["web.search","web.fetch"],metadata={"plan_steps":["web.search","web.fetch"]})
     plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).execute_goal(goal)); assert plan.status.value=="FAILED" and plan.steps[1].status.value=="FAILED"
 
+def test_real_webfetch_all_failed_recovery(db,monkeypatch):
+    from lhas.domain.models import Project
+    from lhas.persistence.repositories import ProjectRepository, RunRepository, AttemptRepository
+    from lhas.persistence.phaseb_repos import FailureReportRepository, RecoveryActionRepository
+    from lhas.planning.models import Goal, CapabilitySpec
+    from lhas.planning.planner import DeterministicPlanner
+    from lhas.planning.service import PlanExecutionService
+    project=Project(name="real-fetch-fail"); ProjectRepository(db).create(project)
+    search=FakeTool(CapabilitySpec(name="web.search",description="search"),lambda r:{"results":[{"url":"https://example.com/a"},{"url":"https://example.com/b"}]})
+    class BadOpener:
+        def open(self,req,timeout=15): raise urllib.error.URLError("offline")
+    monkeypatch.setattr(live_tools.urllib.request,"build_opener",lambda *a: BadOpener())
+    reg=ToolRegistry(); reg.register(search); reg.register(WebFetchTool())
+    goal=Goal(project_id=project.id,objective="x",allowed_capabilities=["web.search","web.fetch"],metadata={"plan_steps":["web.search","web.fetch"]})
+    plan=asyncio.run(PlanExecutionService(db,DeterministicPlanner(),reg).execute_goal(goal)); assert plan.status.value=="FAILED"
+    run=RunRepository(db).list_for_task(plan.steps[1].task_id)[0]; attempts=AttemptRepository(db).list_for_run(run.id)
+    assert len(attempts)==2 and FailureReportRepository(db).list_for_attempt(attempts[0].id) and RecoveryActionRepository(db).list_for_attempt(attempts[0].id)
+
+def test_redirect_private_block_before_target(monkeypatch):
+    class Resp:
+        status=302; headers={"Content-Type":"text/html","Location":"http://127.0.0.1/secret"}
+        def __enter__(self): return self
+        def __exit__(self,*a): pass
+        def read(self,*a): return b""
+        def geturl(self): return "http://127.0.0.1/secret"
+    class Opener:
+        def open(self,req,timeout=15): return Resp()
+    monkeypatch.setattr(live_tools.urllib.request,"build_opener",lambda *a: Opener())
+    result=asyncio.run(WebFetchTool().execute(req("web.fetch",{"url":"https://public.example"})))
+    assert result.error_type == "SSRF_BLOCKED"
+
 def test_pdf_native_extraction(tmp_path):
-    pytest.importorskip("pypdf")
     from pypdf import PdfWriter
+    from pypdf.generic import NameObject, DictionaryObject, DecodedStreamObject
     p=tmp_path/"resume.pdf"; writer=PdfWriter(); writer.add_blank_page(width=72,height=72)
+    page=writer.pages[0]
+    font=DictionaryObject({NameObject("/Type"):NameObject("/Font"),NameObject("/Subtype"):NameObject("/Type1"),NameObject("/BaseFont"):NameObject("/Helvetica")})
+    font_ref=writer._add_object(font)
+    page[NameObject("/Resources")]=DictionaryObject({NameObject("/Font"):DictionaryObject({NameObject("/F1"):font_ref})})
+    stream=DecodedStreamObject(); stream.set_data(b"BT /F1 12 Tf 10 50 Td (React TypeScript Python Agent) Tj ET")
+    page[NameObject("/Contents")]=writer._add_object(stream)
     with p.open("wb") as fh: writer.write(fh)
     result=asyncio.run(ResumeReaderTool().execute(req("document.resume.read",{"path":str(p)})))
-    assert result.error_type in {None,"EMPTY_CONTENT"}
+    assert result.status == ToolResultStatus.SUCCESS and "React TypeScript Python Agent" in result.output["text"]
+
+def test_pdf_dependency_missing(monkeypatch,tmp_path):
+    p=tmp_path/"resume.pdf"; p.write_bytes(b"%PDF-1.4")
+    real=__import__("builtins").__import__
+    def fake(name,*a,**k):
+        if name == "pypdf": raise ImportError("missing")
+        return real(name,*a,**k)
+    monkeypatch.setattr("builtins.__import__",fake)
+    result=asyncio.run(ResumeReaderTool().execute(req("document.resume.read",{"path":str(p)})))
+    assert result.error_type == "PDF_DEPENDENCY_MISSING"

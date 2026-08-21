@@ -121,7 +121,8 @@ class WebFetchTool:
         except ValueError as exc: return _fail(str(exc),str(exc))
         try:
             req=urllib.request.Request(url,headers={"User-Agent":"LHAS-D2/0.1","Accept":"text/html,text/plain,application/pdf"})
-            with urllib.request.urlopen(req,timeout=self.timeout) as resp:
+            opener=urllib.request.build_opener(_SafeRedirect)
+            with opener.open(req,timeout=self.timeout) as resp:
                 _safe_url(resp.geturl() if hasattr(resp,"geturl") else url)
                 code=resp.status; ctype=resp.headers.get("Content-Type","")
                 if not any(x in ctype.lower() for x in ("text/", "json", "html", "xml", "pdf")): return _fail("UNSUPPORTED_CONTENT",ctype)
