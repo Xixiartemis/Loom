@@ -42,6 +42,42 @@ class TaskRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+class GoalRow(Base):
+    __tablename__ = "goals"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    constraints: Mapped[str | None] = _json_col()
+    success_criteria: Mapped[str | None] = _json_col()
+    allowed_capabilities: Mapped[str | None] = _json_col()
+    requires_human_approval: Mapped[bool] = mapped_column(Integer, nullable=False, default=False)
+    metadata_json: Mapped[str | None] = _json_col()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+class PlanRow(Base):
+    __tablename__ = "plans"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    goal_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    mode: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(48), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+class PlanStepRow(Base):
+    __tablename__ = "plan_steps"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    plan_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(128), nullable=False)
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    capability: Mapped[str] = mapped_column(String(128), nullable=False)
+    depends_on: Mapped[str | None] = _json_col()
+    inputs: Mapped[str | None] = _json_col()
+    expected_output: Mapped[str | None] = mapped_column(Text, nullable=True)
+    success_criteria: Mapped[str | None] = _json_col()
+    status: Mapped[str] = mapped_column(String(48), nullable=False)
+    task_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
 
 class RunRow(Base):
     __tablename__ = "runs"
